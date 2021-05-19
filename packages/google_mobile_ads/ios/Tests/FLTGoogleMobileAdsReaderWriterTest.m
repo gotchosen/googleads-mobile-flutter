@@ -63,6 +63,7 @@
 
   FLTAnchoredAdaptiveBannerSize *decodedSize = [_messageCodec decode:encodedMessage];
   XCTAssertEqual(decodedSize.size.size.width, testAdSize.size.width);
+  XCTAssertEqual(decodedSize.size.size.height, testAdSize.size.height);
 }
 
 - (void)testEncodeDecodeSmartBannerAdSize {

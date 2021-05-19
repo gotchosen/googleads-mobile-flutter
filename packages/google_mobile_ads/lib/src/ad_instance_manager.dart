@@ -292,7 +292,6 @@ class AdInstanceManager {
   }
 }
 
-@visibleForTesting
 class AdMessageCodec extends StandardMessageCodec {
   const AdMessageCodec();
 
@@ -362,13 +361,14 @@ class AdMessageCodec extends StandardMessageCodec {
         final String orientationStr =
             readValueOfType(buffer.getUint8(), buffer);
         final num width = readValueOfType(buffer.getUint8(), buffer);
+        final num height = readValueOfType(buffer.getUint8(), buffer);
         return AnchoredAdaptiveBannerAdSize(
           Orientation.values.firstWhere(
             (Orientation orientation) =>
                 describeEnum(orientation) == orientationStr,
           ),
           width: width.truncate(),
-          height: -1, // Unused value
+          height: height.truncate(),
         );
       case _valueSmartBannerAdSize:
         final String orientationStr =
@@ -464,6 +464,7 @@ class AdMessageCodec extends StandardMessageCodec {
       buffer.putUint8(_valueAnchoredAdaptiveBannerAdSize);
       writeValue(buffer, describeEnum(value.orientation));
       writeValue(buffer, value.width);
+      writeValue(buffer, value.height);
     } else if (value is SmartBannerAdSize) {
       buffer.putUint8(_valueSmartBannerAdSize);
       if (defaultTargetPlatform == TargetPlatform.iOS) {
