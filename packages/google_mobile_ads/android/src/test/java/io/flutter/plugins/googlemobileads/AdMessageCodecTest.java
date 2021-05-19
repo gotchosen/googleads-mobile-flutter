@@ -18,6 +18,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 import android.content.Context;
+import androidx.annotation.NonNull;
 import com.google.android.gms.ads.AdSize;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -29,7 +30,29 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class AdMessageCodecTest {
-  AdMessageCodec testCodec;
+  static class TestMessageCodec extends AdMessageCodec {
+    TestMessageCodec(@NonNull Context context, @NonNull FlutterAdSize.AdSizeFactory adSizeFactory) {
+      super(context, adSizeFactory);
+    }
+
+    @Override
+    protected Object readValueOfType(byte type, ByteBuffer buffer) {
+      if (type == VALUE_ANCHORED_ADAPTIVE_BANNER_AD_SIZE) {
+        final String orientation = (String) readValueOfType(buffer.get(), buffer);
+        final Integer width = (Integer) readValueOfType(buffer.get(), buffer);
+        @SuppressWarnings("unused")
+        // Unused to create a new instance when reading the value from Dart.
+        // This is for the purpose of testing the writer.
+        final Integer height = (Integer) readValueOfType(buffer.get(), buffer);
+        return new FlutterAdSize.AnchoredAdaptiveBannerAdSize(
+            context, adSizeFactory, orientation, width);
+      } else {
+        return super.readValueOfType(type, buffer);
+      }
+    }
+  }
+
+  TestMessageCodec testCodec;
   AdSize mockAdSize;
   FlutterAdSize.AdSizeFactory testAdFactory;
 
@@ -43,7 +66,7 @@ public class AdMessageCodecTest {
             return mockAdSize;
           }
         };
-    testCodec = new AdMessageCodec(null, testAdFactory);
+    testCodec = new TestMessageCodec(null, testAdFactory);
   }
 
   @Test
