@@ -17,16 +17,15 @@ package io.flutter.plugins.googlemobileads;
 import android.os.Bundle;
 import androidx.annotation.Nullable;
 import com.google.ads.mediation.admob.AdMobAdapter;
-import com.google.android.gms.ads.admanager.AdManagerAdRequest;
+import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
- * Instantiates and serializes {@link com.google.android.gms.ads.admanager.AdManagerAdRequest} for
+ * Instantiates and serializes {@link com.google.android.gms.ads.doubleclick.PublisherAdRequest} for
  * the Google Mobile Ads Plugin.
  */
-class FlutterAdManagerAdRequest {
+class FlutterPublisherAdRequest {
   @Nullable private List<String> keywords;
   @Nullable private String contentUrl;
   @Nullable private Map<String, String> customTargeting;
@@ -66,8 +65,8 @@ class FlutterAdManagerAdRequest {
       return this;
     }
 
-    FlutterAdManagerAdRequest build() {
-      final FlutterAdManagerAdRequest request = new FlutterAdManagerAdRequest();
+    FlutterPublisherAdRequest build() {
+      final FlutterPublisherAdRequest request = new FlutterPublisherAdRequest();
       request.keywords = keywords;
       request.contentUrl = contentUrl;
       request.customTargeting = customTargeting;
@@ -77,10 +76,10 @@ class FlutterAdManagerAdRequest {
     }
   }
 
-  private FlutterAdManagerAdRequest() {}
+  private FlutterPublisherAdRequest() {}
 
-  AdManagerAdRequest asAdManagerAdRequest() {
-    final AdManagerAdRequest.Builder builder = new AdManagerAdRequest.Builder();
+  PublisherAdRequest asPublisherAdRequest() {
+    final PublisherAdRequest.Builder builder = new PublisherAdRequest.Builder();
     if (keywords != null) {
       for (final String keyword : keywords) {
         builder.addKeyword(keyword);
@@ -136,19 +135,24 @@ class FlutterAdManagerAdRequest {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    } else if (!(o instanceof FlutterAdManagerAdRequest)) {
-      return false;
-    }
+    if (this == o) return true;
+    if (!(o instanceof FlutterPublisherAdRequest)) return false;
 
-    FlutterAdManagerAdRequest request = (FlutterAdManagerAdRequest) o;
+    FlutterPublisherAdRequest request = (FlutterPublisherAdRequest) o;
 
-    return Objects.equals(keywords, request.keywords)
-        && Objects.equals(contentUrl, request.contentUrl)
-        && Objects.equals(customTargeting, request.customTargeting)
-        && Objects.equals(nonPersonalizedAds, request.nonPersonalizedAds)
-        && Objects.equals(customTargetingLists, request.customTargetingLists);
+    return objectEquals(keywords, request.keywords)
+        && objectEquals(contentUrl, request.contentUrl)
+        && objectEquals(customTargeting, request.customTargeting)
+        && objectEquals(nonPersonalizedAds, request.nonPersonalizedAds)
+        && objectEquals(customTargetingLists, request.customTargetingLists);
+  }
+
+  /**
+   * Calculate object equality between l and r. We can't use Objects.equals() due to backwards
+   * compatibility to API 16.
+   */
+  private boolean objectEquals(Object l, Object r) {
+    return (l == null) ? (r == null) : (l.equals(r));
   }
 
   @Override

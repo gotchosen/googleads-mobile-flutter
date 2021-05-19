@@ -30,8 +30,8 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
   BannerAd? _bannerAd;
   bool _bannerAdIsLoaded = false;
 
-  AdManagerBannerAd? _adManagerBannerAd;
-  bool _adManagerBannerAdIsLoaded = false;
+  PublisherBannerAd? _publisherBannerAd;
+  bool _publisherBannerAdIsLoaded = false;
 
   NativeAd? _nativeAd;
   bool _nativeAdIsLoaded = false;
@@ -56,20 +56,23 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
                     child: AdWidget(ad: bannerAd));
               }
 
-              final AdManagerBannerAd? adManagerBannerAd = _adManagerBannerAd;
+              final PublisherBannerAd? publisherBannerAd = _publisherBannerAd;
               if (index == 10 &&
-                  _adManagerBannerAdIsLoaded &&
-                  adManagerBannerAd != null) {
+                  _publisherBannerAdIsLoaded &&
+                  publisherBannerAd != null) {
                 return Container(
-                    height: adManagerBannerAd.sizes[0].height.toDouble(),
-                    width: adManagerBannerAd.sizes[0].width.toDouble(),
-                    child: AdWidget(ad: _adManagerBannerAd!));
+                    height: publisherBannerAd.sizes[0].height.toDouble(),
+                    width: publisherBannerAd.sizes[0].width.toDouble(),
+                    child: AdWidget(ad: _publisherBannerAd!));
               }
 
               final NativeAd? nativeAd = _nativeAd;
               if (index == 15 && _nativeAdIsLoaded && nativeAd != null) {
                 return Container(
-                    width: 250, height: 350, child: AdWidget(ad: nativeAd));
+                  width: 250,
+                  height: 350,
+                  child: AdWidget(ad: nativeAd),
+                );
               }
 
               return Text(
@@ -90,7 +93,7 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
         adUnitId: Platform.isAndroid
             ? 'ca-app-pub-3940256099942544/6300978111'
             : 'ca-app-pub-3940256099942544/2934735716',
-        listener: BannerAdListener(
+        listener: AdListener(
           onAdLoaded: (Ad ad) {
             print('$BannerAd loaded.');
             setState(() {
@@ -103,6 +106,7 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
           },
           onAdOpened: (Ad ad) => print('$BannerAd onAdOpened.'),
           onAdClosed: (Ad ad) => print('$BannerAd onAdClosed.'),
+          onApplicationExit: (Ad ad) => print('$BannerAd onApplicationExit.'),
         ),
         request: AdRequest())
       ..load();
@@ -113,7 +117,7 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
           : 'ca-app-pub-3940256099942544/3986624511',
       request: AdRequest(),
       factoryId: 'adFactoryExample',
-      listener: NativeAdListener(
+      listener: AdListener(
         onAdLoaded: (Ad ad) {
           print('$NativeAd loaded.');
           setState(() {
@@ -126,26 +130,29 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
         },
         onAdOpened: (Ad ad) => print('$NativeAd onAdOpened.'),
         onAdClosed: (Ad ad) => print('$NativeAd onAdClosed.'),
+        onApplicationExit: (Ad ad) => print('$NativeAd onApplicationExit.'),
       ),
     )..load();
 
-    _adManagerBannerAd = AdManagerBannerAd(
+    _publisherBannerAd = PublisherBannerAd(
       adUnitId: '/6499/example/banner',
-      request: AdManagerAdRequest(nonPersonalizedAds: true),
+      request: PublisherAdRequest(nonPersonalizedAds: true),
       sizes: <AdSize>[AdSize.largeBanner],
-      listener: AdManagerBannerAdListener(
+      listener: AdListener(
         onAdLoaded: (Ad ad) {
-          print('$AdManagerBannerAd loaded.');
+          print('$PublisherBannerAd loaded.');
           setState(() {
-            _adManagerBannerAdIsLoaded = true;
+            _publisherBannerAdIsLoaded = true;
           });
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          print('$AdManagerBannerAd failedToLoad: $error');
+          print('$PublisherBannerAd failedToLoad: $error');
           ad.dispose();
         },
-        onAdOpened: (Ad ad) => print('$AdManagerBannerAd onAdOpened.'),
-        onAdClosed: (Ad ad) => print('$AdManagerBannerAd onAdClosed.'),
+        onAdOpened: (Ad ad) => print('$PublisherBannerAd onAdOpened.'),
+        onAdClosed: (Ad ad) => print('$PublisherBannerAd onAdClosed.'),
+        onApplicationExit: (Ad ad) =>
+            print('$PublisherBannerAd onApplicationExit.'),
       ),
     )..load();
   }
@@ -154,7 +161,7 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
   void dispose() {
     super.dispose();
     _bannerAd?.dispose();
-    _adManagerBannerAd?.dispose();
+    _publisherBannerAd?.dispose();
     _nativeAd?.dispose();
   }
 }
