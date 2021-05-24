@@ -340,6 +340,7 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
                 .setAdUnitId(call.<String>argument("adUnitId"))
                 .setSizes(call.<List<FlutterAdSize>>argument("sizes"))
                 .setRequest(call.<FlutterPublisherAdRequest>argument("request"))
+                .setAdUnit()
                 .build();
         instanceManager.trackAd(publisherBannerAd, call.<Integer>argument("adId"));
         publisherBannerAd.load();
