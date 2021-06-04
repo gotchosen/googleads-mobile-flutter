@@ -21,8 +21,15 @@ import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.admanager.AdManagerAdView;
 import com.google.android.gms.ads.admanager.AppEventListener;
 import com.google.android.gms.common.internal.Preconditions;
+import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
 import io.flutter.plugin.platform.PlatformView;
 import java.util.List;
+
+import org.prebid.mobile.BannerAdUnit;
+import org.prebid.mobile.Host;
+import org.prebid.mobile.OnCompleteListener;
+import org.prebid.mobile.PrebidMobile;
+import org.prebid.mobile.ResultCode;
 
 /**
  * Wrapper around {@link com.google.android.gms.ads.admanager.AdManagerAdView} for the Google
@@ -61,6 +68,7 @@ class FlutterAdManagerBannerAd extends FlutterAd implements PlatformView, Flutte
 
   @Override
   void load() {
+    preparePrebid();
     view = bannerAdCreator.createAdManagerAdView();
     view.setAdUnitId(adUnitId);
     view.setAppEventListener(
@@ -69,7 +77,8 @@ class FlutterAdManagerBannerAd extends FlutterAd implements PlatformView, Flutte
           public void onAppEvent(String name, String data) {
             manager.onAppEvent(FlutterAdManagerBannerAd.this, name, data);
           }
-        });
+        }
+    );
 
     final AdSize[] allSizes = new AdSize[sizes.size()];
     for (int i = 0; i < sizes.size(); i++) {
@@ -78,6 +87,26 @@ class FlutterAdManagerBannerAd extends FlutterAd implements PlatformView, Flutte
     view.setAdSizes(allSizes);
     view.setAdListener(new FlutterBannerAdListener(manager, this));
     view.loadAd(request.asAdManagerAdRequest());
+
+//    if (request != null) {
+////      view.loadAd(request.asPublisherAdRequest());
+//      final PublisherAdRequest r = request.asPublisherAdRequest();
+//      adUnit.fetchDemand(r, new OnCompleteListener() {
+//        @Override
+//        public void onComplete(ResultCode resultCode) {
+//          view.loadAd(r);
+//        }
+//      });
+//    } else {
+////      view.loadAd(new FlutterPublisherAdRequest.Builder().build().asPublisherAdRequest());
+//      final PublisherAdRequest r = new FlutterPublisherAdRequest.Builder().build().asPublisherAdRequest();
+//      adUnit.fetchDemand(r, new OnCompleteListener() {
+//        @Override
+//        public void onComplete(ResultCode resultCode) {
+//          view.loadAd(r);
+//        }
+//      });
+//    }
   }
 
   @Override
@@ -99,5 +128,15 @@ class FlutterAdManagerBannerAd extends FlutterAd implements PlatformView, Flutte
       view.destroy();
       view = null;
     }
+  }
+
+  public void preparePrebid() {
+    host = Host.CUSTOM;
+    host.setHostUrl("https://ib.adnxs.com/openrtb2/prebid");
+//    host.setHostUrl("https://prebid.adnxs.com/pbs/v1/openrtb2/auction");
+    PrebidMobile.setApplicationContext(manager.activity);
+    PrebidMobile.setPrebidServerHost(host);
+    PrebidMobile.setPrebidServerAccountId("11011");
+//    PrebidMobile.setPrebidServerAccountId("bfa84af2-bd16-4d35-96ad-31c6bb888df0");
   }
 }
