@@ -828,7 +828,7 @@ which are used to support [custom targeting](https://support.google.com/admanage
 final PublisherAdRequest request = PublisherAdRequest(
   keywords: <String>['flutterio', 'beautiful apps'],
   contentUrl: 'https://flutter.dev',
-  customTargeting: <String, String>{'some', 'targeting'},
+  customTargeting: <String, String>{'some': 'targeting'},
   customTargetingLists: <String, List<String>>{'favoriteColors': <String>['red', 'yellow']},
 );
 ```
