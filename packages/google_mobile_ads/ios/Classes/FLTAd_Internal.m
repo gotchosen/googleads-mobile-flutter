@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
+@import PrebidMobile;
 #import "FLTAd_Internal.h"
 #import "FLTConstants.h"
 
@@ -236,6 +236,7 @@
 @implementation FLTGAMBannerAd {
   GAMBannerView *_bannerView;
   FLTGAMAdRequest *_adRequest;
+  BannerAdUnit *_bannerUnit;
 }
 
 - (instancetype)initWithAdUnitId:(NSString *_Nonnull)adUnitId
@@ -244,6 +245,13 @@
               rootViewController:(UIViewController *_Nonnull)rootViewController {
   self = [super init];
   if (self) {
+    Prebid.shared.prebidServerAccountId = @"11011";
+    NSError* err=nil;
+      [[Prebid shared] setCustomPrebidServerWithUrl:@"https://ib.adnxs.com/openrtb2/prebid" error:&err];
+    if(err == nil)
+
+    _bannerUnit = [[BannerAdUnit alloc] initWithConfigId:@"20685367" size:CGSizeMake(320, 50)];
+        
     _adRequest = request;
     _bannerView = [[GAMBannerView alloc] initWithAdSize:sizes[0].size];
     _bannerView.adUnitID = adUnitId;
@@ -266,6 +274,14 @@
 
 - (void)load {
   [self.bannerView loadRequest:_adRequest.asGAMRequest];
+// //  [self.bannerView loadRequest:_adRequest.asDFPRequest];
+//     DFPRequest *_dfpRequest = _adRequest.asDFPRequest;
+//     [_bannerUnit fetchDemandWithAdObject:_dfpRequest completion:^(enum ResultCode result) {
+//         NSLog(@"Prebid demand result %ld", (long)result);
+//         dispatch_async(dispatch_get_main_queue(), ^{
+//             [self.bannerView loadRequest:_dfpRequest];
+//         });
+//     }];
 }
 
 #pragma mark - FlutterPlatformView
