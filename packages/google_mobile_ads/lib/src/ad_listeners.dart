@@ -26,8 +26,7 @@ typedef GenericAdEventCallback<Ad> = void Function(Ad ad);
 typedef FullScreenAdLoadErrorCallback = void Function(LoadAdError error);
 
 /// The callback type for when a user earns a reward from a [RewardedAd].
-typedef OnUserEarnedRewardCallback = void Function(
-    RewardedAd ad, RewardItem reward);
+typedef OnUserEarnedRewardCallback = void Function(RewardedAd ad, RewardItem reward);
 
 /// The callback type to handle an error loading an [Ad].
 typedef AdLoadErrorCallback = void Function(Ad ad, LoadAdError error);
@@ -107,8 +106,7 @@ class BannerAdListener extends AdWithViewListener {
 }
 
 /// A listener for receiving notifications for the lifecycle of an [AdManagerBannerAd].
-class AdManagerBannerAdListener extends BannerAdListener
-    implements AppEventListener {
+class AdManagerBannerAdListener extends BannerAdListener implements AppEventListener {
   /// Constructs an [AdManagerBannerAdListener] with the provided event callbacks.
   ///
   /// Typically you will override [onAdLoaded] and [onAdFailedToLoad]:
@@ -237,8 +235,7 @@ class RewardedAdLoadCallback extends FullScreenAdLoadCallback<RewardedAd> {
 }
 
 /// This class holds callbacks for loading an [InterstitialAd].
-class InterstitialAdLoadCallback
-    extends FullScreenAdLoadCallback<InterstitialAd> {
+class InterstitialAdLoadCallback extends FullScreenAdLoadCallback<InterstitialAd> {
   /// Construct a [InterstitialAdLoadCallback].
   ///
   /// [Ad.dispose] should be invoked from [onAdFailedToLoad].
@@ -249,8 +246,7 @@ class InterstitialAdLoadCallback
 }
 
 /// This class holds callbacks for loading an [AdManagerInterstitialAd].
-class AdManagerInterstitialAdLoadCallback
-    extends FullScreenAdLoadCallback<AdManagerInterstitialAd> {
+class AdManagerInterstitialAdLoadCallback extends FullScreenAdLoadCallback<AdManagerInterstitialAd> {
   /// Construct a [AdManagerInterstitialAdLoadCallback].
   ///
   /// [Ad.dispose] should be invoked from [onAdFailedToLoad].

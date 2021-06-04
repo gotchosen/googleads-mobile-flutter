@@ -38,69 +38,69 @@ public class FlutterAdLoader {
 
   /** Load an interstitial ad. */
   public void loadInterstitial(
-      @NonNull Context context,
-      @NonNull String adUnitId,
-      @NonNull AdRequest adRequest,
-      @NonNull InterstitialAdLoadCallback loadCallback) {
+          @NonNull Context context,
+          @NonNull String adUnitId,
+          @NonNull AdRequest adRequest,
+          @NonNull InterstitialAdLoadCallback loadCallback) {
     InterstitialAd.load(context, adUnitId, adRequest, loadCallback);
   }
 
   /** Load an ad manager interstitial ad. */
   public void loadAdManagerInterstitial(
-      @NonNull Context context,
-      @NonNull String adUnitId,
-      @NonNull AdManagerAdRequest adRequest,
-      @NonNull AdManagerInterstitialAdLoadCallback loadCallback) {
+          @NonNull Context context,
+          @NonNull String adUnitId,
+          @NonNull AdManagerAdRequest adRequest,
+          @NonNull AdManagerInterstitialAdLoadCallback loadCallback) {
     AdManagerInterstitialAd.load(context, adUnitId, adRequest, loadCallback);
   }
 
   /** Load a rewarded ad. */
   public void loadRewarded(
-      @NonNull Context context,
-      @NonNull String adUnitId,
-      @NonNull AdRequest adRequest,
-      @NonNull RewardedAdLoadCallback loadCallback) {
+          @NonNull Context context,
+          @NonNull String adUnitId,
+          @NonNull AdRequest adRequest,
+          @NonNull RewardedAdLoadCallback loadCallback) {
     RewardedAd.load(context, adUnitId, adRequest, loadCallback);
   }
 
   /** Load an ad manager rewarded ad. */
   public void loadAdManagerRewarded(
-      @NonNull Context context,
-      @NonNull String adUnitId,
-      @NonNull AdManagerAdRequest adRequest,
-      @NonNull RewardedAdLoadCallback loadCallback) {
+          @NonNull Context context,
+          @NonNull String adUnitId,
+          @NonNull AdManagerAdRequest adRequest,
+          @NonNull RewardedAdLoadCallback loadCallback) {
     RewardedAd.load(context, adUnitId, adRequest, loadCallback);
   }
 
   /** Load a native ad. */
   public void loadNativeAd(
-      @NonNull Context context,
-      @NonNull String adUnitId,
-      @NonNull OnNativeAdLoadedListener onNativeAdLoadedListener,
-      @NonNull NativeAdOptions nativeAdOptions,
-      @NonNull AdListener adListener,
-      @NonNull AdRequest adRequest) {
+          @NonNull Context context,
+          @NonNull String adUnitId,
+          @NonNull OnNativeAdLoadedListener onNativeAdLoadedListener,
+          @NonNull NativeAdOptions nativeAdOptions,
+          @NonNull AdListener adListener,
+          @NonNull AdRequest adRequest) {
     new AdLoader.Builder(context, adUnitId)
-        .forNativeAd(onNativeAdLoadedListener)
-        .withNativeAdOptions(nativeAdOptions)
-        .withAdListener(adListener)
-        .build()
-        .loadAd(adRequest);
+            .forNativeAd(onNativeAdLoadedListener)
+            .withNativeAdOptions(nativeAdOptions)
+            .withAdListener(adListener)
+            .build()
+            .loadAd(adRequest);
   }
 
   /** Load an ad manager native ad. */
   public void loadAdManagerNativeAd(
-      @NonNull Context context,
-      @NonNull String adUnitId,
-      @NonNull OnNativeAdLoadedListener onNativeAdLoadedListener,
-      @NonNull NativeAdOptions nativeAdOptions,
-      @NonNull AdListener adListener,
-      @NonNull AdManagerAdRequest adManagerAdRequest) {
+          @NonNull Context context,
+          @NonNull String adUnitId,
+          @NonNull OnNativeAdLoadedListener onNativeAdLoadedListener,
+          @NonNull NativeAdOptions nativeAdOptions,
+          @NonNull AdListener adListener,
+          @NonNull AdManagerAdRequest adManagerAdRequest) {
     new AdLoader.Builder(context, adUnitId)
-        .forNativeAd(onNativeAdLoadedListener)
-        .withNativeAdOptions(nativeAdOptions)
-        .withAdListener(adListener)
-        .build()
-        .loadAd(adManagerAdRequest);
+            .forNativeAd(onNativeAdLoadedListener)
+            .withNativeAdOptions(nativeAdOptions)
+            .withAdListener(adListener)
+            .build()
+            .loadAd(adManagerAdRequest);
   }
 }

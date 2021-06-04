@@ -29,9 +29,9 @@ class FlutterAdListener extends AdListener {
   @NonNull protected final ResponseInfoProvider responseInfoProvider;
 
   FlutterAdListener(
-      @NonNull AdInstanceManager manager,
-      @NonNull FlutterAd ad,
-      @NonNull ResponseInfoProvider responseInfoProvider) {
+          @NonNull AdInstanceManager manager,
+          @NonNull FlutterAd ad,
+          @NonNull ResponseInfoProvider responseInfoProvider) {
     this.manager = manager;
     this.ad = ad;
     this.responseInfoProvider = responseInfoProvider;
@@ -64,9 +64,9 @@ class FlutterAdListener extends AdListener {
 class FlutterBannerAdListener extends FlutterAdListener {
 
   FlutterBannerAdListener(
-      @NonNull AdInstanceManager manager,
-      @NonNull FlutterAd ad,
-      ResponseInfoProvider responseInfoProvider) {
+          @NonNull AdInstanceManager manager,
+          @NonNull FlutterAd ad,
+          ResponseInfoProvider responseInfoProvider) {
     super(manager, ad, responseInfoProvider);
   }
 

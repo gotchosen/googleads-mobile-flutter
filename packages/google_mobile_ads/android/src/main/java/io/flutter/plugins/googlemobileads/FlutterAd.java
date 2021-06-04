@@ -48,9 +48,9 @@ abstract class FlutterAd {
     }
 
     FlutterResponseInfo(
-        @Nullable String responseId,
-        @Nullable String mediationAdapterClassName,
-        @NonNull List<FlutterAdapterResponseInfo> adapterResponseInfos) {
+            @Nullable String responseId,
+            @Nullable String mediationAdapterClassName,
+            @NonNull List<FlutterAdapterResponseInfo> adapterResponseInfos) {
       this.responseId = responseId;
       this.mediationAdapterClassName = mediationAdapterClassName;
       this.adapterResponses = adapterResponseInfos;
@@ -81,8 +81,8 @@ abstract class FlutterAd {
 
       FlutterResponseInfo that = (FlutterResponseInfo) obj;
       return Objects.equals(responseId, that.responseId)
-          && Objects.equals(mediationAdapterClassName, that.mediationAdapterClassName)
-          && Objects.equals(adapterResponses, that.adapterResponses);
+              && Objects.equals(mediationAdapterClassName, that.mediationAdapterClassName)
+              && Objects.equals(adapterResponses, that.adapterResponses);
     }
 
     @Override
@@ -115,11 +115,11 @@ abstract class FlutterAd {
     }
 
     FlutterAdapterResponseInfo(
-        @NonNull String adapterClassName,
-        long latencyMillis,
-        @NonNull String description,
-        @Nullable String credentials,
-        @Nullable FlutterAdError error) {
+            @NonNull String adapterClassName,
+            long latencyMillis,
+            @NonNull String description,
+            @Nullable String credentials,
+            @Nullable FlutterAdError error) {
       this.adapterClassName = adapterClassName;
       this.latencyMillis = latencyMillis;
       this.description = description;
@@ -161,10 +161,10 @@ abstract class FlutterAd {
 
       final FlutterAdapterResponseInfo that = (FlutterAdapterResponseInfo) obj;
       return Objects.equals(adapterClassName, that.adapterClassName)
-          && latencyMillis == that.latencyMillis
-          && Objects.equals(description, that.description)
-          && Objects.equals(credentials, that.credentials)
-          && Objects.equals(error, that.error);
+              && latencyMillis == that.latencyMillis
+              && Objects.equals(description, that.description)
+              && Objects.equals(credentials, that.credentials)
+              && Objects.equals(error, that.error);
     }
 
     @Override
@@ -233,10 +233,10 @@ abstract class FlutterAd {
     }
 
     FlutterLoadAdError(
-        int code,
-        @NonNull String domain,
-        @NonNull String message,
-        @Nullable FlutterResponseInfo responseInfo) {
+            int code,
+            @NonNull String domain,
+            @NonNull String message,
+            @Nullable FlutterResponseInfo responseInfo) {
       this.code = code;
       this.domain = domain;
       this.message = message;

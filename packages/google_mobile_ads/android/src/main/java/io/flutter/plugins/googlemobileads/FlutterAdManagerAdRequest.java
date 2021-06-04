@@ -56,7 +56,7 @@ class FlutterAdManagerAdRequest {
     }
 
     public Builder setCustomTargetingLists(
-        @Nullable Map<String, List<String>> customTargetingLists) {
+            @Nullable Map<String, List<String>> customTargetingLists) {
       this.customTargetingLists = customTargetingLists;
       return this;
     }
@@ -145,10 +145,10 @@ class FlutterAdManagerAdRequest {
     FlutterAdManagerAdRequest request = (FlutterAdManagerAdRequest) o;
 
     return Objects.equals(keywords, request.keywords)
-        && Objects.equals(contentUrl, request.contentUrl)
-        && Objects.equals(customTargeting, request.customTargeting)
-        && Objects.equals(nonPersonalizedAds, request.nonPersonalizedAds)
-        && Objects.equals(customTargetingLists, request.customTargetingLists);
+            && Objects.equals(contentUrl, request.contentUrl)
+            && Objects.equals(customTargeting, request.customTargeting)
+            && Objects.equals(nonPersonalizedAds, request.nonPersonalizedAds)
+            && Objects.equals(customTargetingLists, request.customTargetingLists);
   }
 
   @Override

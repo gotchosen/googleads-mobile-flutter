@@ -273,15 +273,15 @@
 }
 
 - (void)load {
-  [self.bannerView loadRequest:_adRequest.asGAMRequest];
-// //  [self.bannerView loadRequest:_adRequest.asDFPRequest];
-//     DFPRequest *_dfpRequest = _adRequest.asDFPRequest;
-//     [_bannerUnit fetchDemandWithAdObject:_dfpRequest completion:^(enum ResultCode result) {
-//         NSLog(@"Prebid demand result %ld", (long)result);
-//         dispatch_async(dispatch_get_main_queue(), ^{
-//             [self.bannerView loadRequest:_dfpRequest];
-//         });
-//     }];
+//  [self.bannerView loadRequest:_adRequest.asGAMRequest];
+ //  [self.bannerView loadRequest:_adRequest.asDFPRequest];
+    GAMRequest *_dfpRequest = _adRequest.asGAMRequest;
+    [_bannerUnit fetchDemandWithAdObject:_dfpRequest completion:^(enum ResultCode result) {
+         NSLog(@"Prebid demand result %ld", (long)result);
+         dispatch_async(dispatch_get_main_queue(), ^{
+             [self.bannerView loadRequest:_dfpRequest];
+         });
+    }];
 }
 
 #pragma mark - FlutterPlatformView

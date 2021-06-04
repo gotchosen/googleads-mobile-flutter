@@ -45,7 +45,7 @@ class AdInstanceManager {
     this.ads = new HashMap<>();
     final StandardMethodCodec methodCodec = new StandardMethodCodec(new AdMessageCodec(activity));
     this.channel =
-        new MethodChannel(binaryMessenger, "plugins.flutter.io/google_mobile_ads", methodCodec);
+            new MethodChannel(binaryMessenger, "plugins.flutter.io/google_mobile_ads", methodCodec);
   }
 
   void setActivity(@NonNull Activity activity) {
@@ -70,7 +70,7 @@ class AdInstanceManager {
   void trackAd(@NonNull FlutterAd ad, int adId) {
     if (ads.get(adId) != null) {
       throw new IllegalArgumentException(
-          String.format("Ad for following adId already exists: %d", adId));
+              String.format("Ad for following adId already exists: %d", adId));
     }
     ads.put(adId, ad);
   }
@@ -101,7 +101,7 @@ class AdInstanceManager {
     arguments.put("adId", adIdFor(ad));
     arguments.put("eventName", "onAdLoaded");
     FlutterResponseInfo flutterResponseInfo =
-        (responseInfo == null) ? null : new FlutterResponseInfo(responseInfo);
+            (responseInfo == null) ? null : new FlutterResponseInfo(responseInfo);
     arguments.put("responseInfo", flutterResponseInfo);
     channel.invokeMethod("onAdEvent", arguments);
   }
@@ -152,7 +152,7 @@ class AdInstanceManager {
   }
 
   void onRewardedAdUserEarnedReward(
-      @NonNull FlutterRewardedAd ad, @NonNull FlutterRewardedAd.FlutterRewardItem reward) {
+          @NonNull FlutterRewardedAd ad, @NonNull FlutterRewardedAd.FlutterRewardItem reward) {
     final Map<Object, Object> arguments = new HashMap<>();
     arguments.put("adId", adIdFor(ad));
     arguments.put("eventName", "onRewardedAdUserEarnedReward");

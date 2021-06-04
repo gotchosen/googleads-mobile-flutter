@@ -65,8 +65,7 @@ class AdError {
 class ResponseInfo {
   /// Constructs a [ResponseInfo] with the [responseId] and [mediationAdapterClassName].
   @protected
-  const ResponseInfo(
-      {this.responseId, this.mediationAdapterClassName, this.adapterResponses});
+  const ResponseInfo({this.responseId, this.mediationAdapterClassName, this.adapterResponses});
 
   /// An identifier for the loaded ad.
   final String? responseId;
@@ -131,8 +130,7 @@ class AdapterResponseInfo {
 class LoadAdError extends AdError {
   /// Default constructor for [LoadAdError].
   @protected
-  LoadAdError(int code, String domain, String message, this.responseInfo)
-      : super(code, domain, message);
+  LoadAdError(int code, String domain, String message, this.responseInfo) : super(code, domain, message);
 
   /// The [ResponseInfo] for the error.
   final ResponseInfo? responseInfo;
@@ -216,8 +214,7 @@ class AdManagerAdRequest {
         listEquals<String>(keywords, other.keywords) &&
         contentUrl == other.contentUrl &&
         mapEquals<String, String>(customTargeting, other.customTargeting) &&
-        customTargetingLists.toString() ==
-            other.customTargetingLists.toString() &&
+        customTargetingLists.toString() == other.customTargetingLists.toString() &&
         nonPersonalizedAds == other.nonPersonalizedAds;
   }
 }
@@ -297,13 +294,19 @@ class AdSize {
     Orientation orientation,
     int width,
   ) async {
-    return await instanceManager.channel
-        .invokeMethod<AnchoredAdaptiveBannerAdSize?>(
+    final num? height = await instanceManager.channel.invokeMethod<num?>(
       'AdSize#getAnchoredAdaptiveBannerAdSize',
       <String, Object>{
         'orientation': describeEnum(orientation),
         'width': width,
       },
+    );
+
+    if (height == null) return null;
+    return AnchoredAdaptiveBannerAdSize(
+      orientation,
+      width: width,
+      height: height.truncate(),
     );
   }
 
@@ -363,8 +366,7 @@ abstract class Ad {
 /// A valid [adUnitId] and [size] are required.
 abstract class AdWithView extends Ad {
   /// Default constructor, used by subclasses.
-  AdWithView({required String adUnitId, required this.listener})
-      : super(adUnitId: adUnitId);
+  AdWithView({required String adUnitId, required this.listener}) : super(adUnitId: adUnitId);
 
   /// The [AdWithViewListener] for the ad.
   final AdWithViewListener listener;
@@ -434,26 +436,21 @@ class _AdWidgetState extends State<AdWidget> {
     if (_adIdAlreadyMounted) {
       throw FlutterError.fromParts(<DiagnosticsNode>[
         ErrorSummary('This AdWidget is already in the Widget tree'),
-        ErrorHint(
-            'If you placed this AdWidget in a list, make sure you create a new instance '
+        ErrorHint('If you placed this AdWidget in a list, make sure you create a new instance '
             'in the builder function with a unique ad object.'),
-        ErrorHint(
-            'Make sure you are not using the same ad object in more than one AdWidget.'),
+        ErrorHint('Make sure you are not using the same ad object in more than one AdWidget.'),
       ]);
     }
     if (_adLoadNotCalled) {
       throw FlutterError.fromParts(<DiagnosticsNode>[
-        ErrorSummary(
-            'AdWidget requires Ad.load to be called before AdWidget is inserted into the tree'),
-        ErrorHint(
-            'Parameter ad is not loaded. Call Ad.load before AdWidget is inserted into the tree.'),
+        ErrorSummary('AdWidget requires Ad.load to be called before AdWidget is inserted into the tree'),
+        ErrorHint('Parameter ad is not loaded. Call Ad.load before AdWidget is inserted into the tree.'),
       ]);
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
       return PlatformViewLink(
         viewType: '${instanceManager.channel.name}/ad_widget',
-        surfaceFactory:
-            (BuildContext context, PlatformViewController controller) {
+        surfaceFactory: (BuildContext context, PlatformViewController controller) {
           return AndroidViewSurface(
             controller: controller as AndroidViewController,
             gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
@@ -519,9 +516,8 @@ class BannerAd extends AdWithView {
   /// developers are encouraged to use it while building and testing their apps.
   /// {@endtemplate}
   /// {@macro google_mobile_ads.testAdUnitId}
-  static final String testAdUnitId = Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/6300978111'
-      : 'ca-app-pub-3940256099942544/2934735716';
+  static final String testAdUnitId =
+      Platform.isAndroid ? 'ca-app-pub-3940256099942544/6300978111' : 'ca-app-pub-3940256099942544/2934735716';
 
   @override
   Future<void> load() async {
@@ -640,9 +636,8 @@ class NativeAd extends AdWithView {
   /// developers are encouraged to use it while building and testing their apps.
   /// {@endtemplate}
   /// {@macro google_mobile_ads.testAdUnitId}
-  static final String testAdUnitId = Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/2247696110'
-      : 'ca-app-pub-3940256099942544/3986624511';
+  static final String testAdUnitId =
+      Platform.isAndroid ? 'ca-app-pub-3940256099942544/2247696110' : 'ca-app-pub-3940256099942544/3986624511';
 
   @override
   Future<void> load() async {
@@ -672,9 +667,8 @@ class InterstitialAd extends AdWithoutView {
   FullScreenContentCallback<InterstitialAd>? fullScreenContentCallback;
 
   /// {@macro google_mobile_ads.testAdUnitId}
-  static final String testAdUnitId = Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/1033173712'
-      : 'ca-app-pub-3940256099942544/4411468910';
+  static final String testAdUnitId =
+      Platform.isAndroid ? 'ca-app-pub-3940256099942544/1033173712' : 'ca-app-pub-3940256099942544/4411468910';
 
   /// Loads an [InterstitialAd] with the given [adUnitId] and [request].
   static Future<void> load({
@@ -682,8 +676,7 @@ class InterstitialAd extends AdWithoutView {
     required AdRequest request,
     required InterstitialAdLoadCallback adLoadCallback,
   }) async {
-    InterstitialAd ad = InterstitialAd._(
-        adUnitId: adUnitId, adLoadCallback: adLoadCallback, request: request);
+    InterstitialAd ad = InterstitialAd._(adUnitId: adUnitId, adLoadCallback: adLoadCallback, request: request);
 
     await instanceManager.loadInterstitialAd(ad);
   }
@@ -728,8 +721,8 @@ class AdManagerInterstitialAd extends AdWithoutView {
     required AdManagerInterstitialAdLoadCallback adLoadCallback,
     AppEventListener? appEventListener,
   }) async {
-    AdManagerInterstitialAd ad = AdManagerInterstitialAd._(
-        adUnitId: adUnitId, adLoadCallback: adLoadCallback, request: request);
+    AdManagerInterstitialAd ad =
+        AdManagerInterstitialAd._(adUnitId: adUnitId, adLoadCallback: adLoadCallback, request: request);
 
     await instanceManager.loadAdManagerInterstitialAd(ad);
   }
@@ -786,9 +779,8 @@ class RewardedAd extends AdWithoutView {
   /// developers are encouraged to use it while building and testing their apps.
   /// {@endtemplate}
   /// {@macro google_mobile_ads.testAdUnitId}
-  static final String testAdUnitId = Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/5224354917'
-      : 'ca-app-pub-3940256099942544/1712485313';
+  static final String testAdUnitId =
+      Platform.isAndroid ? 'ca-app-pub-3940256099942544/5224354917' : 'ca-app-pub-3940256099942544/1712485313';
 
   /// Optional [ServerSideVerificationOptions].
   ServerSideVerificationOptions? serverSideVerificationOptions;
@@ -874,8 +866,6 @@ class ServerSideVerificationOptions {
 
   @override
   bool operator ==(other) {
-    return other is ServerSideVerificationOptions &&
-        userId == other.userId &&
-        customData == other.customData;
+    return other is ServerSideVerificationOptions && userId == other.userId && customData == other.customData;
   }
 }

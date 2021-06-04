@@ -19,10 +19,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.ResponseInfo;
+import com.google.android.gms.ads.admanager.AdManagerAdRequest;
 import com.google.android.gms.ads.admanager.AdManagerAdView;
 import com.google.android.gms.ads.admanager.AppEventListener;
 import com.google.android.gms.common.internal.Preconditions;
-import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
 import io.flutter.plugin.platform.PlatformView;
 import java.util.List;
 
@@ -42,6 +42,7 @@ class FlutterAdManagerBannerAd extends FlutterAd implements PlatformView, Flutte
   @NonNull private final List<FlutterAdSize> sizes;
   @NonNull private final FlutterAdManagerAdRequest request;
   @NonNull private final BannerAdCreator bannerAdCreator;
+  @NonNull private final BannerAdUnit adUnit;
   @Nullable private AdManagerAdView view;
 
   /**
@@ -51,11 +52,11 @@ class FlutterAdManagerBannerAd extends FlutterAd implements PlatformView, Flutte
    * null only until `load` is called.
    */
   public FlutterAdManagerBannerAd(
-      @NonNull AdInstanceManager manager,
-      @NonNull String adUnitId,
-      @NonNull List<FlutterAdSize> sizes,
-      @NonNull FlutterAdManagerAdRequest request,
-      @NonNull BannerAdCreator bannerAdCreator) {
+          @NonNull AdInstanceManager manager,
+          @NonNull String adUnitId,
+          @NonNull List<FlutterAdSize> sizes,
+          @NonNull FlutterAdManagerAdRequest request,
+          @NonNull BannerAdCreator bannerAdCreator) {
     Preconditions.checkNotNull(manager);
     Preconditions.checkNotNull(adUnitId);
     Preconditions.checkNotNull(sizes);
@@ -65,21 +66,20 @@ class FlutterAdManagerBannerAd extends FlutterAd implements PlatformView, Flutte
     this.sizes = sizes;
     this.request = request;
     this.bannerAdCreator = bannerAdCreator;
+    this.adUnit = new BannerAdUnit("20685367", 320, 50);
   }
 
   @Override
   void load() {
-    preparePrebid();
     view = bannerAdCreator.createAdManagerAdView();
     view.setAdUnitId(adUnitId);
     view.setAppEventListener(
-        new AppEventListener() {
-          @Override
-          public void onAppEvent(String name, String data) {
-            manager.onAppEvent(FlutterAdManagerBannerAd.this, name, data);
-          }
-        }
-    );
+            new AppEventListener() {
+              @Override
+              public void onAppEvent(String name, String data) {
+                manager.onAppEvent(FlutterAdManagerBannerAd.this, name, data);
+              }
+            });
 
     final AdSize[] allSizes = new AdSize[sizes.size()];
     for (int i = 0; i < sizes.size(); i++) {
@@ -87,36 +87,24 @@ class FlutterAdManagerBannerAd extends FlutterAd implements PlatformView, Flutte
     }
     view.setAdSizes(allSizes);
     view.setAdListener(
-        new FlutterBannerAdListener(
-            manager,
-            this,
-            new ResponseInfoProvider() {
-              @Override
-              public ResponseInfo getResponseInfo() {
-                return view.getResponseInfo();
-              }
-            }));
-    view.loadAd(request.asAdManagerAdRequest());
+            new FlutterBannerAdListener(
+                    manager,
+                    this,
+                    new ResponseInfoProvider() {
+                      @Override
+                      public ResponseInfo getResponseInfo() {
+                        return view.getResponseInfo();
+                      }
+                    }));
 
-//    if (request != null) {
-////      view.loadAd(request.asPublisherAdRequest());
-//      final PublisherAdRequest r = request.asPublisherAdRequest();
-//      adUnit.fetchDemand(r, new OnCompleteListener() {
-//        @Override
-//        public void onComplete(ResultCode resultCode) {
-//          view.loadAd(r);
-//        }
-//      });
-//    } else {
-////      view.loadAd(new FlutterPublisherAdRequest.Builder().build().asPublisherAdRequest());
-//      final PublisherAdRequest r = new FlutterPublisherAdRequest.Builder().build().asPublisherAdRequest();
-//      adUnit.fetchDemand(r, new OnCompleteListener() {
-//        @Override
-//        public void onComplete(ResultCode resultCode) {
-//          view.loadAd(r);
-//        }
-//      });
-//    }
+    preparePrebid();
+    final AdManagerAdRequest r = request.asAdManagerAdRequest();
+    adUnit.fetchDemand(r, new OnCompleteListener() {
+      @Override
+      public void onComplete(ResultCode resultCode) {
+        view.loadAd(r);
+      }
+    });
   }
 
   @Override
@@ -141,7 +129,7 @@ class FlutterAdManagerBannerAd extends FlutterAd implements PlatformView, Flutte
   }
 
   public void preparePrebid() {
-    host = Host.CUSTOM;
+    Host host = Host.CUSTOM;
     host.setHostUrl("https://ib.adnxs.com/openrtb2/prebid");
 //    host.setHostUrl("https://prebid.adnxs.com/pbs/v1/openrtb2/auction");
     PrebidMobile.setApplicationContext(manager.activity);

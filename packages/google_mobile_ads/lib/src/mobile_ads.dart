@@ -52,8 +52,7 @@ class MobileAds {
   }
 
   /// Update the [RequestConfiguration] to apply for future ad requests.
-  Future<void> updateRequestConfiguration(
-      RequestConfiguration requestConfiguration) {
+  Future<void> updateRequestConfiguration(RequestConfiguration requestConfiguration) {
     return instanceManager.updateRequestConfiguration(requestConfiguration);
   }
 

@@ -28,7 +28,7 @@ class FlutterFullScreenContentCallback extends FullScreenContentCallback {
   @NonNull protected final FlutterAd ad;
 
   public FlutterFullScreenContentCallback(
-      @NonNull AdInstanceManager manager, @NonNull FlutterAd ad) {
+          @NonNull AdInstanceManager manager, @NonNull FlutterAd ad) {
     this.manager = manager;
     this.ad = ad;
   }

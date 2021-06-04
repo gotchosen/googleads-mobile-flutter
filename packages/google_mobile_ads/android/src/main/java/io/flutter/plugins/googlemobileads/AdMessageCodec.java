@@ -115,7 +115,7 @@ class AdMessageCodec extends StandardMessageCodec {
     } else if (value instanceof FlutterAdapterStatus.AdapterInitializationState) {
       stream.write(VALUE_INITIALIZATION_STATE);
       final FlutterAdapterStatus.AdapterInitializationState state =
-          (FlutterAdapterStatus.AdapterInitializationState) value;
+              (FlutterAdapterStatus.AdapterInitializationState) value;
       switch (state) {
         case NOT_READY:
           writeValue(stream, "notReady");
@@ -154,55 +154,55 @@ class AdMessageCodec extends StandardMessageCodec {
         final String orientation = (String) readValueOfType(buffer.get(), buffer);
         final Integer width = (Integer) readValueOfType(buffer.get(), buffer);
         return new FlutterAdSize.AnchoredAdaptiveBannerAdSize(
-            context, adSizeFactory, orientation, width);
+                context, adSizeFactory, orientation, width);
       case VALUE_SMART_BANNER_AD_SIZE:
         return new FlutterAdSize.SmartBannerAdSize();
       case VALUE_AD_SIZE:
         return new FlutterAdSize(
-            (Integer) readValueOfType(buffer.get(), buffer),
-            (Integer) readValueOfType(buffer.get(), buffer));
+                (Integer) readValueOfType(buffer.get(), buffer),
+                (Integer) readValueOfType(buffer.get(), buffer));
       case VALUE_AD_REQUEST:
         return new FlutterAdRequest.Builder()
-            .setKeywords((List<String>) readValueOfType(buffer.get(), buffer))
-            .setContentUrl((String) readValueOfType(buffer.get(), buffer))
-            .setNonPersonalizedAds(booleanValueOf(readValueOfType(buffer.get(), buffer)))
-            .build();
+                .setKeywords((List<String>) readValueOfType(buffer.get(), buffer))
+                .setContentUrl((String) readValueOfType(buffer.get(), buffer))
+                .setNonPersonalizedAds(booleanValueOf(readValueOfType(buffer.get(), buffer)))
+                .build();
       case VALUE_REWARD_ITEM:
         return new FlutterRewardedAd.FlutterRewardItem(
-            (Integer) readValueOfType(buffer.get(), buffer),
-            (String) readValueOfType(buffer.get(), buffer));
+                (Integer) readValueOfType(buffer.get(), buffer),
+                (String) readValueOfType(buffer.get(), buffer));
       case VALUE_ADAPTER_RESPONSE_INFO:
         return new FlutterAdapterResponseInfo(
-            (String) readValueOfType(buffer.get(), buffer),
-            (long) readValueOfType(buffer.get(), buffer),
-            (String) readValueOfType(buffer.get(), buffer),
-            (String) readValueOfType(buffer.get(), buffer),
-            (FlutterAdError) readValueOfType(buffer.get(), buffer));
+                (String) readValueOfType(buffer.get(), buffer),
+                (long) readValueOfType(buffer.get(), buffer),
+                (String) readValueOfType(buffer.get(), buffer),
+                (String) readValueOfType(buffer.get(), buffer),
+                (FlutterAdError) readValueOfType(buffer.get(), buffer));
       case VALUE_RESPONSE_INFO:
         return new FlutterResponseInfo(
-            (String) readValueOfType(buffer.get(), buffer),
-            (String) readValueOfType(buffer.get(), buffer),
-            (List<FlutterAdapterResponseInfo>) readValueOfType(buffer.get(), buffer));
+                (String) readValueOfType(buffer.get(), buffer),
+                (String) readValueOfType(buffer.get(), buffer),
+                (List<FlutterAdapterResponseInfo>) readValueOfType(buffer.get(), buffer));
       case VALUE_LOAD_AD_ERROR:
         return new FlutterAd.FlutterLoadAdError(
-            (Integer) readValueOfType(buffer.get(), buffer),
-            (String) readValueOfType(buffer.get(), buffer),
-            (String) readValueOfType(buffer.get(), buffer),
-            (FlutterResponseInfo) readValueOfType(buffer.get(), buffer));
+                (Integer) readValueOfType(buffer.get(), buffer),
+                (String) readValueOfType(buffer.get(), buffer),
+                (String) readValueOfType(buffer.get(), buffer),
+                (FlutterResponseInfo) readValueOfType(buffer.get(), buffer));
       case VALUE_AD_ERROR:
         return new FlutterAdError(
-            (Integer) readValueOfType(buffer.get(), buffer),
-            (String) readValueOfType(buffer.get(), buffer),
-            (String) readValueOfType(buffer.get(), buffer));
+                (Integer) readValueOfType(buffer.get(), buffer),
+                (String) readValueOfType(buffer.get(), buffer),
+                (String) readValueOfType(buffer.get(), buffer));
       case VALUE_ADMANAGER_AD_REQUEST:
         return new FlutterAdManagerAdRequest.Builder()
-            .setKeywords((List<String>) readValueOfType(buffer.get(), buffer))
-            .setContentUrl((String) readValueOfType(buffer.get(), buffer))
-            .setCustomTargeting((Map<String, String>) readValueOfType(buffer.get(), buffer))
-            .setCustomTargetingLists(
-                (Map<String, List<String>>) readValueOfType(buffer.get(), buffer))
-            .setNonPersonalizedAds((Boolean) readValueOfType(buffer.get(), buffer))
-            .build();
+                .setKeywords((List<String>) readValueOfType(buffer.get(), buffer))
+                .setContentUrl((String) readValueOfType(buffer.get(), buffer))
+                .setCustomTargeting((Map<String, String>) readValueOfType(buffer.get(), buffer))
+                .setCustomTargetingLists(
+                        (Map<String, List<String>>) readValueOfType(buffer.get(), buffer))
+                .setNonPersonalizedAds((Boolean) readValueOfType(buffer.get(), buffer))
+                .build();
       case VALUE_INITIALIZATION_STATE:
         final String state = (String) readValueOfType(buffer.get(), buffer);
         switch (state) {
@@ -216,16 +216,16 @@ class AdMessageCodec extends StandardMessageCodec {
         }
       case VALUE_ADAPTER_STATUS:
         return new FlutterAdapterStatus(
-            (FlutterAdapterStatus.AdapterInitializationState) readValueOfType(buffer.get(), buffer),
-            (String) readValueOfType(buffer.get(), buffer),
-            (Number) readValueOfType(buffer.get(), buffer));
+                (FlutterAdapterStatus.AdapterInitializationState) readValueOfType(buffer.get(), buffer),
+                (String) readValueOfType(buffer.get(), buffer),
+                (Number) readValueOfType(buffer.get(), buffer));
       case VALUE_INITIALIZATION_STATUS:
         return new FlutterInitializationStatus(
-            (Map<String, FlutterAdapterStatus>) readValueOfType(buffer.get(), buffer));
+                (Map<String, FlutterAdapterStatus>) readValueOfType(buffer.get(), buffer));
       case VALUE_SERVER_SIDE_VERIFICATION_OPTIONS:
         return new FlutterServerSideVerificationOptions(
-            (String) readValueOfType(buffer.get(), buffer),
-            (String) readValueOfType(buffer.get(), buffer));
+                (String) readValueOfType(buffer.get(), buffer),
+                (String) readValueOfType(buffer.get(), buffer));
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -235,13 +235,12 @@ class AdMessageCodec extends StandardMessageCodec {
     if (value instanceof FlutterAdSize.AnchoredAdaptiveBannerAdSize) {
       stream.write(VALUE_ANCHORED_ADAPTIVE_BANNER_AD_SIZE);
       final FlutterAdSize.AnchoredAdaptiveBannerAdSize size =
-          (FlutterAdSize.AnchoredAdaptiveBannerAdSize) value;
+              (FlutterAdSize.AnchoredAdaptiveBannerAdSize) value;
       writeValue(stream, size.orientation);
       writeValue(stream, size.width);
-      writeValue(stream, size.height);
     } else if (value instanceof FlutterAdSize.SmartBannerAdSize) {
       stream.write(VALUE_SMART_BANNER_AD_SIZE);
-    } else if (value instanceof FlutterAdSize) {
+    } else {
       stream.write(VALUE_AD_SIZE);
       writeValue(stream, value.width);
       writeValue(stream, value.height);

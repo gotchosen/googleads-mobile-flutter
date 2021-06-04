@@ -106,7 +106,8 @@
     result(nil);
   } else if ([call.method isEqualToString:@"MobileAds#setSameAppKeyEnabled"]) {
     GADRequestConfiguration *requestConfig = GADMobileAds.sharedInstance.requestConfiguration;
-    [requestConfig setSameAppKeyEnabled:call.arguments[@"isEnabled"]];
+    NSNumber *isEnabled = call.arguments[@"isEnabled"];
+    [requestConfig setSameAppKeyEnabled:isEnabled.boolValue];
     result(nil);
   } else if ([call.method isEqualToString:@"MobileAds#updateRequestConfiguration"]) {
     NSString *maxAdContentRating = call.arguments[@"maxAdContentRating"];
@@ -238,7 +239,11 @@
         [[FLTAnchoredAdaptiveBannerSize alloc] initWithFactory:[[FLTAdSizeFactory alloc] init]
                                                    orientation:call.arguments[@"orientation"]
                                                          width:call.arguments[@"width"]];
-    result(size);
+    if (IsGADAdSizeValid(size.size)) {
+      result(size.height);
+    } else {
+      result(nil);
+    }
   } else {
     result(FlutterMethodNotImplemented);
   }
