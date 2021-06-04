@@ -127,8 +127,8 @@ public class AdMessageCodecTest {
     list.add("testValue2");
     targetingList.put("testKey", list);
 
-    FlutterPublisherAdRequest flutterPublisherAdRequest =
-        new FlutterPublisherAdRequest.Builder()
+    FlutterAdManagerAdRequest flutterAdManagerAdRequest =
+        new FlutterAdManagerAdRequest.Builder()
             .setContentUrl("test-content-url")
             .setCustomTargeting(targeting)
             .setCustomTargetingLists(targetingList)
@@ -136,11 +136,11 @@ public class AdMessageCodecTest {
             .setNonPersonalizedAds(true)
             .build();
 
-    ByteBuffer message = testCodec.encodeMessage(flutterPublisherAdRequest);
+    ByteBuffer message = codec.encodeMessage(flutterAdManagerAdRequest);
 
-    FlutterPublisherAdRequest decodedPublisherAdRequest =
-        (FlutterPublisherAdRequest) testCodec.decodeMessage((ByteBuffer) message.position(0));
-    assertEquals(decodedPublisherAdRequest, flutterPublisherAdRequest);
+    FlutterAdManagerAdRequest decodedAdManagerAdRequest =
+      (FlutterAdManagerAdRequest) codec.decodeMessage((ByteBuffer) message.position(0));
+    assertEquals(decodedAdManagerAdRequest, flutterAdManagerAdRequest);
   }
 
   @Test

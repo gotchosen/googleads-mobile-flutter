@@ -32,11 +32,11 @@ android {
         disable 'InvalidPackage'
     }
     dependencies {
-      api 'com.google.android.gms:play-services-ads:19.7.0'
+      api 'com.google.android.gms:play-services-ads:20.0.0'
       api 'org.prebid:prebid-mobile-sdk:[1,2)'
       testImplementation 'junit:junit:4.12'
       testImplementation 'org.hamcrest:hamcrest:2.2'
-      testImplementation 'org.mockito:mockito-inline:2.13.0'
+      testImplementation 'org.mockito:mockito-inline:3.9.0'
     }
 }
 

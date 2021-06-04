@@ -78,9 +78,9 @@ class AdMessageCodec extends StandardMessageCodec {
       writeValue(stream, error.code);
       writeValue(stream, error.domain);
       writeValue(stream, error.message);
-    } else if (value instanceof FlutterPublisherAdRequest) {
+    } else if (value instanceof FlutterAdManagerAdRequest) {
       stream.write(VALUE_PUBLISHER_AD_REQUEST);
-      final FlutterPublisherAdRequest request = (FlutterPublisherAdRequest) value;
+      final FlutterAdManagerAdRequest request = (FlutterAdManagerAdRequest) value;
       writeValue(stream, request.getKeywords());
       writeValue(stream, request.getContentUrl());
       writeValue(stream, request.getCustomTargeting());
@@ -152,7 +152,7 @@ class AdMessageCodec extends StandardMessageCodec {
             (String) readValueOfType(buffer.get(), buffer),
             (String) readValueOfType(buffer.get(), buffer));
       case VALUE_PUBLISHER_AD_REQUEST:
-        return new FlutterPublisherAdRequest.Builder()
+        return new FlutterAdManagerAdRequest.Builder()
             .setKeywords((List<String>) readValueOfType(buffer.get(), buffer))
             .setContentUrl((String) readValueOfType(buffer.get(), buffer))
             .setCustomTargeting((Map<String, String>) readValueOfType(buffer.get(), buffer))

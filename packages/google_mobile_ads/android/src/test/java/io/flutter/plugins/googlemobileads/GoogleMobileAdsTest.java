@@ -16,26 +16,17 @@ package io.flutter.plugins.googlemobileads;
 
 import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import android.app.Activity;
-import com.google.android.gms.ads.AdLoader;
-import com.google.android.gms.ads.doubleclick.PublisherAdRequest;
-import com.google.android.gms.ads.doubleclick.PublisherInterstitialAd;
-import com.google.android.gms.ads.formats.UnifiedNativeAd;
-import com.google.android.gms.ads.formats.UnifiedNativeAdView;
-import com.google.android.gms.ads.rewarded.RewardedAd;
-import com.google.android.gms.ads.rewarded.RewardedAdCallback;
-import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback;
-import com.google.android.gms.ads.rewarded.ServerSideVerificationOptions;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.nativead.NativeAdView;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel.Result;
@@ -48,6 +39,7 @@ import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.mockito.ArgumentMatcher;
 
 public class GoogleMobileAdsTest {
@@ -75,13 +67,12 @@ public class GoogleMobileAdsTest {
 
   @Test
   public void loadAd() {
-    final FlutterBannerAd bannerAd =
-        new FlutterBannerAd.Builder()
-            .setManager(testManager)
-            .setAdUnitId("testId")
-            .setSize(new FlutterAdSize(1, 2))
-            .setRequest(request)
-            .build();
+    final FlutterBannerAd bannerAd = new FlutterBannerAd(
+        testManager,
+        "testId",
+        request,
+        new FlutterAdSize(1, 2),
+        new BannerAdCreator(testManager.activity));
     testManager.trackAd(bannerAd, 0);
 
     assertNotNull(testManager.adForId(0));
@@ -289,15 +280,15 @@ public class GoogleMobileAdsTest {
   }
 
   @Test
-  public void disposeAd_publisherBanner() {
-    FlutterPublisherBannerAd publisherBannerAd = mock(FlutterPublisherBannerAd.class);
-    testManager.trackAd(publisherBannerAd, 2);
+  public void disposeAd_adManagerBanner() {
+    FlutterAdManagerBannerAd adManagerBannerAd = Mockito.mock(FlutterAdManagerBannerAd.class);
+    testManager.trackAd(adManagerBannerAd, 2);
     assertNotNull(testManager.adForId(2));
-    assertNotNull(testManager.adIdFor(publisherBannerAd));
+    assertNotNull(testManager.adIdFor(adManagerBannerAd));
     testManager.disposeAd(2);
-    verify(publisherBannerAd).destroy();
+    verify(adManagerBannerAd).destroy();
     assertNull(testManager.adForId(2));
-    assertNull(testManager.adIdFor(publisherBannerAd));
+    assertNull(testManager.adIdFor(adManagerBannerAd));
   }
 
   @Test
@@ -341,11 +332,11 @@ public class GoogleMobileAdsTest {
   }
 
   @Test
-  public void adMessageCodec_encodeFlutterPublisherAdRequest() {
-    final AdMessageCodec codec = new AdMessageCodec(null);
+  public void adMessageCodec_encodeFlutterAdManagerAdRequest() {
+    final AdMessageCodec codec = new AdMessageCodec();
     final ByteBuffer message =
         codec.encodeMessage(
-            new FlutterPublisherAdRequest.Builder()
+            new FlutterAdManagerAdRequest.Builder()
                 .setKeywords(Arrays.asList("1", "2", "3"))
                 .setContentUrl("contentUrl")
                 .setCustomTargeting(Collections.singletonMap("apple", "banana"))
@@ -355,7 +346,7 @@ public class GoogleMobileAdsTest {
 
     assertEquals(
         codec.decodeMessage((ByteBuffer) message.position(0)),
-        new FlutterPublisherAdRequest.Builder()
+        new FlutterAdManagerAdRequest.Builder()
             .setKeywords(Arrays.asList("1", "2", "3"))
             .setContentUrl("contentUrl")
             .setCustomTargeting(Collections.singletonMap("apple", "banana"))
@@ -391,13 +382,12 @@ public class GoogleMobileAdsTest {
 
   @Test
   public void flutterAdListener_onAdLoaded() {
-    final FlutterBannerAd bannerAd =
-        new FlutterBannerAd.Builder()
-            .setManager(testManager)
-            .setAdUnitId("testId")
-            .setSize(new FlutterAdSize(1, 2))
-            .setRequest(request)
-            .build();
+    final FlutterBannerAd bannerAd = new FlutterBannerAd(
+        testManager,
+        "testId",
+        request,
+        new FlutterAdSize(1, 2),
+        new BannerAdCreator(testManager.activity));
     testManager.trackAd(bannerAd, 0);
 
     testManager.onAdLoaded(bannerAd);
@@ -412,13 +402,12 @@ public class GoogleMobileAdsTest {
 
   @Test
   public void flutterAdListener_onAdFailedToLoad() {
-    final FlutterBannerAd bannerAd =
-        new FlutterBannerAd.Builder()
-            .setManager(testManager)
-            .setAdUnitId("testId")
-            .setSize(new FlutterAdSize(1, 2))
-            .setRequest(request)
-            .build();
+    final FlutterBannerAd bannerAd = new FlutterBannerAd(
+        testManager,
+        "testId",
+        request,
+        new FlutterAdSize(1, 2),
+        new BannerAdCreator(testManager.activity));
     testManager.trackAd(bannerAd, 0);
 
     testManager.onAdFailedToLoad(bannerAd, new FlutterAd.FlutterLoadAdError(1, "hi", "friend"));
@@ -437,13 +426,12 @@ public class GoogleMobileAdsTest {
 
   @Test
   public void flutterAdListener_onAppEvent() {
-    final FlutterBannerAd bannerAd =
-        new FlutterBannerAd.Builder()
-            .setManager(testManager)
-            .setAdUnitId("testId")
-            .setSize(new FlutterAdSize(1, 2))
-            .setRequest(request)
-            .build();
+    final FlutterBannerAd bannerAd = new FlutterBannerAd(
+        testManager,
+        "testId",
+        request,
+        new FlutterAdSize(1, 2),
+        new BannerAdCreator(testManager.activity));
     testManager.trackAd(bannerAd, 0);
 
     testManager.onAppEvent(bannerAd, "color", "red");
@@ -461,35 +449,13 @@ public class GoogleMobileAdsTest {
   }
 
   @Test
-  public void flutterAdListener_onApplicationExit() {
-    final FlutterBannerAd bannerAd =
-        new FlutterBannerAd.Builder()
-            .setManager(testManager)
-            .setAdUnitId("testId")
-            .setSize(new FlutterAdSize(1, 2))
-            .setRequest(request)
-            .build();
-    testManager.trackAd(bannerAd, 0);
-
-    testManager.onApplicationExit(bannerAd);
-
-    final MethodCall call = getLastMethodCall();
-    assertEquals("onAdEvent", call.method);
-    //noinspection rawtypes
-    assertThat(call.arguments, (Matcher) hasEntry("eventName", "onApplicationExit"));
-    //noinspection rawtypes
-    assertThat(call.arguments, (Matcher) hasEntry("adId", 0));
-  }
-
-  @Test
   public void flutterAdListener_onAdOpened() {
-    final FlutterBannerAd bannerAd =
-        new FlutterBannerAd.Builder()
-            .setManager(testManager)
-            .setAdUnitId("testId")
-            .setSize(new FlutterAdSize(1, 2))
-            .setRequest(request)
-            .build();
+    final FlutterBannerAd bannerAd = new FlutterBannerAd(
+        testManager,
+        "testId",
+        request,
+        new FlutterAdSize(1, 2),
+        new BannerAdCreator(testManager.activity));
     testManager.trackAd(bannerAd, 0);
 
     testManager.onAdOpened(bannerAd);
@@ -512,8 +478,8 @@ public class GoogleMobileAdsTest {
             .setAdFactory(
                 new GoogleMobileAdsPlugin.NativeAdFactory() {
                   @Override
-                  public UnifiedNativeAdView createNativeAd(
-                      UnifiedNativeAd nativeAd, Map<String, Object> customOptions) {
+                  public NativeAdView createNativeAd(
+                      NativeAd nativeAd, Map<String, Object> customOptions) {
                     return null;
                   }
                 })
@@ -540,8 +506,8 @@ public class GoogleMobileAdsTest {
             .setAdFactory(
                 new GoogleMobileAdsPlugin.NativeAdFactory() {
                   @Override
-                  public UnifiedNativeAdView createNativeAd(
-                      UnifiedNativeAd nativeAd, Map<String, Object> customOptions) {
+                  public NativeAdView createNativeAd(
+                      NativeAd nativeAd, Map<String, Object> customOptions) {
                     return null;
                   }
                 })
@@ -560,13 +526,12 @@ public class GoogleMobileAdsTest {
 
   @Test
   public void flutterAdListener_onAdClosed() {
-    final FlutterBannerAd bannerAd =
-        new FlutterBannerAd.Builder()
-            .setManager(testManager)
-            .setAdUnitId("testId")
-            .setSize(new FlutterAdSize(1, 2))
-            .setRequest(request)
-            .build();
+    final FlutterBannerAd bannerAd = new FlutterBannerAd(
+        testManager,
+        "testId",
+        request,
+        new FlutterAdSize(1, 2),
+        new BannerAdCreator(testManager.activity));
     testManager.trackAd(bannerAd, 0);
 
     testManager.onAdClosed(bannerAd);
@@ -579,13 +544,16 @@ public class GoogleMobileAdsTest {
     assertThat(call.arguments, (Matcher) hasEntry("adId", 0));
   }
 
+
   @Test
   public void flutterAdListener_onRewardedAdUserEarnedReward() {
-    final FlutterRewardedAd ad = new FlutterRewardedAd(testManager, "testId", request, null);
+    FlutterAdLoader mockFlutterAdLoader = mock(FlutterAdLoader.class);
+    final FlutterRewardedAd ad = new FlutterRewardedAd(
+      testManager, "testId", request, null, mockFlutterAdLoader);
     testManager.trackAd(ad, 0);
 
     testManager.onRewardedAdUserEarnedReward(
-        ad, new FlutterRewardedAd.FlutterRewardItem(23, "coins"));
+      ad, new FlutterRewardedAd.FlutterRewardItem(23, "coins"));
 
     final MethodCall call = getLastMethodCall();
     assertEquals("onAdEvent", call.method);
@@ -595,8 +563,8 @@ public class GoogleMobileAdsTest {
     assertThat(call.arguments, (Matcher) hasEntry("adId", 0));
     //noinspection rawtypes
     assertThat(
-        call.arguments,
-        (Matcher) hasEntry("rewardItem", new FlutterRewardedAd.FlutterRewardItem(23, "coins")));
+      call.arguments,
+      (Matcher) hasEntry("rewardItem", new FlutterRewardedAd.FlutterRewardItem(23, "coins")));
   }
 
   @Test
