@@ -31,6 +31,7 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.LoadAdError;
+import com.google.android.gms.ads.ResponseInfo;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugins.googlemobileads.FlutterAd.FlutterLoadAdError;
 import org.junit.Before;
@@ -67,7 +68,11 @@ public class FlutterBannerAdTest {
 
   @Test
   public void failedToLoad() {
-    final LoadAdError loadError = new LoadAdError(1, "2", "3", null, null);
+    final LoadAdError loadError = mock(LoadAdError.class);
+    doReturn(1).when(loadError).getCode();
+    doReturn("2").when(loadError).getDomain();
+    doReturn("3").when(loadError).getMessage();
+    doReturn(null).when(loadError).getResponseInfo();
     doAnswer(new Answer() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
@@ -82,7 +87,8 @@ public class FlutterBannerAdTest {
     verify(mockAdView).setAdListener(any(AdListener.class));
     verify(mockAdView).setAdUnitId(eq("testId"));
     verify(mockAdView).setAdSize(adSize);
-    verify(mockManager).onAdFailedToLoad(eq(flutterBannerAd), eq(new FlutterLoadAdError(loadError)));
+    FlutterLoadAdError expectedError = new FlutterLoadAdError(loadError);
+    verify(mockManager).onAdFailedToLoad(eq(flutterBannerAd), eq(expectedError));
   }
 
   @Test
@@ -99,12 +105,15 @@ public class FlutterBannerAdTest {
       }
     }).when(mockAdView).setAdListener(any(AdListener.class));
 
+    final ResponseInfo responseInfo = mock(ResponseInfo.class);
+    doReturn(responseInfo).when(mockAdView).getResponseInfo();
+
     flutterBannerAd.load();
     verify(mockAdView).loadAd(eq(mockAdRequest));
     verify(mockAdView).setAdListener(any(AdListener.class));
     verify(mockAdView).setAdUnitId(eq("testId"));
     verify(mockAdView).setAdSize(adSize);
-    verify(mockManager).onAdLoaded(eq(flutterBannerAd));
+    verify(mockManager).onAdLoaded(eq(flutterBannerAd), eq(responseInfo));
     verify(mockManager).onAdImpression(eq(flutterBannerAd));
     verify(mockManager).onAdClosed(eq(flutterBannerAd));
     verify(mockManager).onAdOpened(eq(flutterBannerAd));

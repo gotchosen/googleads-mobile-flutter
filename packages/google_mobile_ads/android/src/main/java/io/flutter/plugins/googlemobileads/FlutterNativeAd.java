@@ -19,6 +19,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.ResponseInfo;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAd.OnNativeAdLoadedListener;
 import com.google.android.gms.ads.nativead.NativeAdOptions;
@@ -39,6 +40,7 @@ class FlutterNativeAd extends FlutterAd implements PlatformView, FlutterDestroya
   @Nullable private FlutterAdManagerAdRequest adManagerRequest;
   @Nullable private Map<String, Object> customOptions;
   @Nullable private NativeAdView ad;
+  @Nullable private ResponseInfo responseInfo;
 
   static class Builder {
     @Nullable private AdInstanceManager manager;
@@ -139,9 +141,17 @@ class FlutterNativeAd extends FlutterAd implements PlatformView, FlutterDestroya
       @Override
       public void onNativeAdLoaded(@NonNull NativeAd nativeAd) {
         ad = adFactory.createNativeAd(nativeAd, customOptions);
+        responseInfo = nativeAd.getResponseInfo();
       }
     };
-    AdListener adListener = new FlutterAdListener(manager, this) {
+
+    final ResponseInfoProvider responseInfoProvider = new ResponseInfoProvider() {
+      @Override
+      public ResponseInfo getResponseInfo() {
+        return responseInfo;
+      }
+    };
+    final AdListener adListener = new FlutterAdListener(manager, this, responseInfoProvider) {
       @Override
       public void onAdClicked() {
         manager.onNativeAdClicked(FlutterNativeAd.this);
@@ -149,7 +159,7 @@ class FlutterNativeAd extends FlutterAd implements PlatformView, FlutterDestroya
 
       @Override
       public void onAdImpression() {
-        manager.onNativeAdImpression(FlutterNativeAd.this);
+        manager.onAdImpression(FlutterNativeAd.this);
       }
     };
     NativeAdOptions options = new NativeAdOptions.Builder().build();

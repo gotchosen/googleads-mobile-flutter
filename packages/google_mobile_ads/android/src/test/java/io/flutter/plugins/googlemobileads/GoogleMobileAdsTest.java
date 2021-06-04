@@ -18,22 +18,28 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import android.app.Activity;
+import android.os.Bundle;
+import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.AdapterResponseInfo;
+import com.google.android.gms.ads.ResponseInfo;
 import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAdView;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.StandardMethodCodec;
+import io.flutter.plugins.googlemobileads.FlutterAd.FlutterAdapterResponseInfo;
+import io.flutter.plugins.googlemobileads.FlutterAd.FlutterResponseInfo;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.hamcrest.Matcher;
 import org.junit.Before;
@@ -319,7 +325,6 @@ public class GoogleMobileAdsTest {
             new FlutterAdRequest.Builder()
                 .setKeywords(Arrays.asList("1", "2", "3"))
                 .setContentUrl("contentUrl")
-                .setTestDevices(Arrays.asList("Android", "iOS"))
                 .setNonPersonalizedAds(false)
                 .build());
 
@@ -327,7 +332,6 @@ public class GoogleMobileAdsTest {
         (FlutterAdRequest) codec.decodeMessage((ByteBuffer) message.position(0));
     assertEquals(Arrays.asList("1", "2", "3"), request.getKeywords());
     assertEquals("contentUrl", request.getContentUrl());
-    assertEquals(Arrays.asList("Android", "iOS"), request.getTestDevices());
     assertEquals(false, request.getNonPersonalizedAds());
   }
 
@@ -368,9 +372,18 @@ public class GoogleMobileAdsTest {
 
   @Test
   public void adMessageCodec_encodeFlutterLoadAdError() {
-    final AdMessageCodec codec = new AdMessageCodec(null);
-    final ByteBuffer message =
-        codec.encodeMessage(new FlutterBannerAd.FlutterLoadAdError(1, "domain", "message"));
+    final AdMessageCodec codec = new AdMessageCodec();
+    List<FlutterAdapterResponseInfo> adapterResponseInfos = new ArrayList<>();
+    adapterResponseInfos.add(new FlutterAdapterResponseInfo(
+        "adapter-class",
+        9999,
+        "description",
+        "credentials",
+        null));
+    FlutterResponseInfo info =
+        new FlutterResponseInfo("responseId", "className", adapterResponseInfos);
+    final ByteBuffer message = codec.encodeMessage(
+        new FlutterBannerAd.FlutterLoadAdError(1, "domain", "message", info));
 
     final FlutterAd.FlutterLoadAdError error =
         (FlutterAd.FlutterLoadAdError) codec.decodeMessage((ByteBuffer) message.position(0));
@@ -378,6 +391,7 @@ public class GoogleMobileAdsTest {
     assertEquals(error.code, 1);
     assertEquals(error.domain, "domain");
     assertEquals(error.message, "message");
+    assertEquals(error.responseInfo, info);
   }
 
   @Test
@@ -390,7 +404,38 @@ public class GoogleMobileAdsTest {
         new BannerAdCreator(testManager.activity));
     testManager.trackAd(bannerAd, 0);
 
-    testManager.onAdLoaded(bannerAd);
+    AdError adError = mock(AdError.class);
+    doReturn(1).when(adError).getCode();
+    doReturn("domain").when(adError).getDomain();
+    doReturn("message").when(adError).getMessage();
+
+    Bundle credentials = mock(Bundle.class);
+    doReturn("credentials").when(credentials).toString();
+
+    AdapterResponseInfo adapterInfo = mock(AdapterResponseInfo.class);
+    doReturn("adapter-class").when(adapterInfo).getAdapterClassName();
+    doReturn(adError).when(adapterInfo).getAdError();
+    doReturn(123L).when(adapterInfo).getLatencyMillis();
+    doReturn(credentials).when(adapterInfo).getCredentials();
+    doReturn("description").when(adapterInfo).toString();
+
+    AdapterResponseInfo adapterInfoWithNullError = mock(AdapterResponseInfo.class);
+    doReturn("adapter-class").when(adapterInfoWithNullError).getAdapterClassName();
+    doReturn(null).when(adapterInfoWithNullError).getAdError();
+    doReturn(123L).when(adapterInfoWithNullError).getLatencyMillis();
+    doReturn(null).when(adapterInfoWithNullError).getCredentials();
+    doReturn("description").when(adapterInfoWithNullError).toString();
+
+    List<AdapterResponseInfo> adapterResponses = new ArrayList<>();
+    adapterResponses.add(adapterInfo);
+    adapterResponses.add(adapterInfoWithNullError);
+
+    ResponseInfo responseInfo = mock(ResponseInfo.class);
+    doReturn("response-id").when(responseInfo).getResponseId();
+    doReturn("class-name").when(responseInfo).getMediationAdapterClassName();
+    doReturn(adapterResponses).when(responseInfo).getAdapterResponses();
+
+    testManager.onAdLoaded(bannerAd, responseInfo);
 
     final MethodCall call = getLastMethodCall();
     assertEquals("onAdEvent", call.method);
@@ -398,6 +443,28 @@ public class GoogleMobileAdsTest {
     assertThat(call.arguments, (Matcher) hasEntry("eventName", "onAdLoaded"));
     //noinspection rawtypes
     assertThat(call.arguments, (Matcher) hasEntry("adId", 0));
+    assertThat(call.arguments, (Matcher) hasEntry("responseInfo", new FlutterResponseInfo(responseInfo)));
+  }
+
+  @Test
+  public void flutterAdListener_onAdLoaded_responseInfoNull() {
+    final FlutterBannerAd bannerAd = new FlutterBannerAd(
+        testManager,
+        "testId",
+        request,
+        new FlutterAdSize(1, 2),
+        new BannerAdCreator(testManager.activity));
+    testManager.trackAd(bannerAd, 0);
+
+    testManager.onAdLoaded(bannerAd, null);
+
+    final MethodCall call = getLastMethodCall();
+    assertEquals("onAdEvent", call.method);
+    //noinspection rawtypes
+    assertThat(call.arguments, (Matcher) hasEntry("eventName", "onAdLoaded"));
+    //noinspection rawtypes
+    assertThat(call.arguments, (Matcher) hasEntry("adId", 0));
+    assertThat(call.arguments, (Matcher) hasEntry("responseInfo", null));
   }
 
   @Test
@@ -410,7 +477,8 @@ public class GoogleMobileAdsTest {
         new BannerAdCreator(testManager.activity));
     testManager.trackAd(bannerAd, 0);
 
-    testManager.onAdFailedToLoad(bannerAd, new FlutterAd.FlutterLoadAdError(1, "hi", "friend"));
+    testManager.onAdFailedToLoad(
+        bannerAd, new FlutterAd.FlutterLoadAdError(1, "hi", "friend", null));
 
     final MethodCall call = getLastMethodCall();
     assertEquals("onAdEvent", call.method);
@@ -420,8 +488,8 @@ public class GoogleMobileAdsTest {
     assertThat(call.arguments, (Matcher) hasEntry("adId", 0));
     //noinspection rawtypes
     assertThat(
-        call.arguments,
-        (Matcher) hasEntry("loadAdError", new FlutterAd.FlutterLoadAdError(1, "hi", "friend")));
+      call.arguments,
+      (Matcher) hasEntry("loadAdError", new FlutterAd.FlutterLoadAdError(1, "hi", "friend", null)));
   }
 
   @Test
@@ -514,12 +582,12 @@ public class GoogleMobileAdsTest {
             .build();
     testManager.trackAd(nativeAd, 0);
 
-    testManager.onNativeAdImpression(nativeAd);
+    testManager.onAdImpression(nativeAd);
 
     final MethodCall call = getLastMethodCall();
     assertEquals("onAdEvent", call.method);
     //noinspection rawtypes
-    assertThat(call.arguments, (Matcher) hasEntry("eventName", "onNativeAdImpression"));
+    assertThat(call.arguments, (Matcher) hasEntry("eventName", "onAdImpression"));
     //noinspection rawtypes
     assertThat(call.arguments, (Matcher) hasEntry("adId", 0));
   }

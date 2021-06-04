@@ -32,6 +32,7 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.OnUserEarnedRewardListener;
+import com.google.android.gms.ads.ResponseInfo;
 import com.google.android.gms.ads.admanager.AdManagerAdRequest;
 import com.google.android.gms.ads.rewarded.OnAdMetadataChangedListener;
 import com.google.android.gms.ads.rewarded.RewardItem;
@@ -84,7 +85,11 @@ public class FlutterRewardedAdTest {
   @Test
   public void loadAdManagerRewardedAd_failedToLoad() {
     setupAdManagerMocks(null);
-    final LoadAdError loadAdError = new LoadAdError(1, "2", "3", null, null);
+    final LoadAdError loadAdError = mock(LoadAdError.class);
+    doReturn(1).when(loadAdError).getCode();
+    doReturn("2").when(loadAdError).getDomain();
+    doReturn("3").when(loadAdError).getMessage();
+    doReturn(null).when(loadAdError).getResponseInfo();
     doAnswer(new Answer() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
@@ -108,8 +113,9 @@ public class FlutterRewardedAdTest {
       eq(mockAdManagerAdRequest),
       any(RewardedAdLoadCallback.class));
 
+    FlutterLoadAdError expectedError = new FlutterLoadAdError(loadAdError);
     verify(mockManager)
-      .onAdFailedToLoad(eq(flutterRewardedAd), eq(new FlutterLoadAdError(loadAdError)));
+      .onAdFailedToLoad(eq(flutterRewardedAd), eq(expectedError));
   }
 
   @Test
@@ -118,14 +124,14 @@ public class FlutterRewardedAdTest {
       new FlutterServerSideVerificationOptions("userId", "customData");
     setupAdManagerMocks(options);
 
-    final RewardedAd mockAdManagerAd = mock(RewardedAd.class);
+    final RewardedAd mockAd = mock(RewardedAd.class);
     final LoadAdError loadAdError = new LoadAdError(1, "2", "3", null, null);
     doAnswer(new Answer() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
         RewardedAdLoadCallback adLoadCallback = invocation.getArgument(3);
         // Pass back null for ad
-        adLoadCallback.onAdLoaded(mockAdManagerAd);
+        adLoadCallback.onAdLoaded(mockAd);
         return null;
       }
     }).when(mockFlutterAdLoader)
@@ -134,7 +140,8 @@ public class FlutterRewardedAdTest {
         anyString(),
         any(AdManagerAdRequest.class),
         any(RewardedAdLoadCallback.class));
-
+    final ResponseInfo responseInfo = mock(ResponseInfo.class);
+    doReturn(responseInfo).when(mockAd).getResponseInfo();
     flutterRewardedAd.load();
 
     verify(mockFlutterAdLoader).loadAdManagerRewarded(
@@ -143,7 +150,7 @@ public class FlutterRewardedAdTest {
       eq(mockAdManagerAdRequest),
       any(RewardedAdLoadCallback.class));
 
-    verify(mockManager).onAdLoaded(flutterRewardedAd);
+    verify(mockManager).onAdLoaded(eq(flutterRewardedAd), eq(responseInfo));
 
     doAnswer(new Answer() {
       @Override
@@ -154,7 +161,7 @@ public class FlutterRewardedAdTest {
         callback.onAdDismissedFullScreenContent();
         return null;
       }
-    }).when(mockAdManagerAd).setFullScreenContentCallback(any(FullScreenContentCallback.class));
+    }).when(mockAd).setFullScreenContentCallback(any(FullScreenContentCallback.class));
 
     final RewardItem mockRewardItem = mock(RewardItem.class);
     doReturn(5).when(mockRewardItem).getAmount();
@@ -166,7 +173,7 @@ public class FlutterRewardedAdTest {
         listener.onUserEarnedReward(mockRewardItem);
         return null;
       }
-    }).when(mockAdManagerAd).show(any(Activity.class), any(OnUserEarnedRewardListener.class));
+    }).when(mockAd).show(any(Activity.class), any(OnUserEarnedRewardListener.class));
 
     doAnswer(new Answer() {
       @Override
@@ -175,12 +182,12 @@ public class FlutterRewardedAdTest {
         listener.onAdMetadataChanged();
         return null;
       }
-    }).when(mockAdManagerAd).setOnAdMetadataChangedListener(any(OnAdMetadataChangedListener.class));
+    }).when(mockAd).setOnAdMetadataChangedListener(any(OnAdMetadataChangedListener.class));
 
     flutterRewardedAd.show();
-    verify(mockAdManagerAd).setFullScreenContentCallback(any(FullScreenContentCallback.class));
-    verify(mockAdManagerAd).show(eq(mockManager.activity), any(OnUserEarnedRewardListener.class));
-    verify(mockAdManagerAd).setOnAdMetadataChangedListener(any(OnAdMetadataChangedListener.class));
+    verify(mockAd).setFullScreenContentCallback(any(FullScreenContentCallback.class));
+    verify(mockAd).show(eq(mockManager.activity), any(OnUserEarnedRewardListener.class));
+    verify(mockAd).setOnAdMetadataChangedListener(any(OnAdMetadataChangedListener.class));
     ArgumentMatcher<ServerSideVerificationOptions> serverSideVerificationOptionsArgumentMatcher =
       new ArgumentMatcher<ServerSideVerificationOptions>() {
         @Override
@@ -189,7 +196,7 @@ public class FlutterRewardedAdTest {
             && argument.getUserId().equals(options.getUserId());
         }
       };
-    verify(mockAdManagerAd)
+    verify(mockAd)
       .setServerSideVerificationOptions(
         ArgumentMatchers.argThat(serverSideVerificationOptionsArgumentMatcher));
     verify(mockManager).onAdShowedFullScreenContent(eq(flutterRewardedAd));
@@ -206,14 +213,14 @@ public class FlutterRewardedAdTest {
     setupAdManagerMocks(options);
 
     final FlutterRewardedAd mockFlutterAd = spy(flutterRewardedAd);
-    final RewardedAd mockAdManagerAd = mock(RewardedAd.class);
+    final RewardedAd mockAd = mock(RewardedAd.class);
     final LoadAdError loadAdError = new LoadAdError(1, "2", "3", null, null);
     doAnswer(new Answer() {
       @Override
       public Object answer(InvocationOnMock invocation) throws Throwable {
         RewardedAdLoadCallback adLoadCallback = invocation.getArgument(3);
         // Pass back null for ad
-        adLoadCallback.onAdLoaded(mockAdManagerAd);
+        adLoadCallback.onAdLoaded(mockAd);
         return null;
       }
     }).when(mockFlutterAdLoader)
@@ -222,6 +229,8 @@ public class FlutterRewardedAdTest {
         anyString(),
         any(AdManagerAdRequest.class),
         any(RewardedAdLoadCallback.class));
+    final ResponseInfo responseInfo = mock(ResponseInfo.class);
+    doReturn(responseInfo).when(mockAd).getResponseInfo();
 
     mockFlutterAd.load();
 
@@ -231,7 +240,7 @@ public class FlutterRewardedAdTest {
       eq(mockAdManagerAdRequest),
       any(RewardedAdLoadCallback.class));
 
-    verify(mockManager).onAdLoaded(mockFlutterAd);
+    verify(mockManager).onAdLoaded(eq(mockFlutterAd), eq(responseInfo));
 
     doAnswer(new Answer() {
       @Override
@@ -240,12 +249,12 @@ public class FlutterRewardedAdTest {
         callback.onAdShowedFullScreenContent();
         return null;
       }
-    }).when(mockAdManagerAd).setFullScreenContentCallback(any(FullScreenContentCallback.class));
+    }).when(mockAd).setFullScreenContentCallback(any(FullScreenContentCallback.class));
 
     mockFlutterAd.show();
-    verify(mockAdManagerAd).setFullScreenContentCallback(any(FullScreenContentCallback.class));
-    verify(mockAdManagerAd).show(eq(mockManager.activity), any(OnUserEarnedRewardListener.class));
-    verify(mockAdManagerAd).setOnAdMetadataChangedListener(any(OnAdMetadataChangedListener.class));
+    verify(mockAd).setFullScreenContentCallback(any(FullScreenContentCallback.class));
+    verify(mockAd).show(eq(mockManager.activity), any(OnUserEarnedRewardListener.class));
+    verify(mockAd).setOnAdMetadataChangedListener(any(OnAdMetadataChangedListener.class));
     ArgumentMatcher<ServerSideVerificationOptions> serverSideVerificationOptionsArgumentMatcher =
       new ArgumentMatcher<ServerSideVerificationOptions>() {
         @Override
@@ -253,7 +262,7 @@ public class FlutterRewardedAdTest {
           return argument.getCustomData().isEmpty() && argument.getUserId().isEmpty();
         }
       };
-    verify(mockAdManagerAd)
+    verify(mockAd)
       .setServerSideVerificationOptions(
         ArgumentMatchers.argThat(serverSideVerificationOptionsArgumentMatcher));
   }
@@ -277,7 +286,8 @@ public class FlutterRewardedAdTest {
         anyString(),
         any(AdRequest.class),
         any(RewardedAdLoadCallback.class));
-
+    final ResponseInfo responseInfo = mock(ResponseInfo.class);
+    doReturn(responseInfo).when(mockRewardedAd).getResponseInfo();
     flutterRewardedAd.load();
 
     verify(mockFlutterAdLoader).loadRewarded(
@@ -286,7 +296,7 @@ public class FlutterRewardedAdTest {
       eq(mockAdRequest),
       any(RewardedAdLoadCallback.class));
 
-    verify(mockManager).onAdLoaded(flutterRewardedAd);
+    verify(mockManager).onAdLoaded(eq(flutterRewardedAd), eq(responseInfo));
     final AdError adError = new AdError(0, "ad", "error");
     doAnswer(new Answer() {
       @Override

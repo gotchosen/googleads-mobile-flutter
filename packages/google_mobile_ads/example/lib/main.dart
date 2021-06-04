@@ -25,6 +25,7 @@ import 'reusable_inline_example.dart';
 // You can also test with your own ad unit IDs by registering your device as a
 // test device. Check the logs for your device's ID value.
 const String testDevice = 'YOUR_DEVICE_ID';
+const int maxFailedLoadAttempts = 3;
 
 class MyApp extends StatefulWidget {
   @override
@@ -33,17 +34,16 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   static final AdRequest request = AdRequest(
-    testDevices: <String>[testDevice],
     keywords: <String>['foo', 'bar'],
     contentUrl: 'http://foo.com/bar.html',
     nonPersonalizedAds: true,
   );
 
   InterstitialAd? _interstitialAd;
-  bool _interstitialReady = false;
+  int _numInterstitialLoadAttempts = 0;
 
   RewardedAd? _rewardedAd;
-  bool _rewardedReady = false;
+  int _numRewardedLoadAttempts = 0;
 
   @override
   void initState() {
@@ -62,61 +62,96 @@ class _MyAppState extends State<MyApp> {
   }
 
   void createInterstitialAd() {
-    _interstitialAd ??= InterstitialAd(
-      adUnitId: InterstitialAd.testAdUnitId,
-      request: request,
-      listener: AdListener(
-        onAdLoaded: (Ad ad) {
-          print('${ad.runtimeType} loaded.');
-          _interstitialReady = true;
-        },
-        onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          print('${ad.runtimeType} failed to load: $error.');
-          ad.dispose();
-          _interstitialAd = null;
-          createInterstitialAd();
-        },
-        onAdOpened: (Ad ad) => print('${ad.runtimeType} onAdOpened.'),
-        onAdClosed: (Ad ad) {
-          print('${ad.runtimeType} closed.');
-          ad.dispose();
-          createInterstitialAd();
-        },
-        onApplicationExit: (Ad ad) =>
-            print('${ad.runtimeType} onApplicationExit.'),
-      ),
-    )..load();
+    InterstitialAd.load(
+        adUnitId: InterstitialAd.testAdUnitId,
+        request: request,
+        adLoadCallback: InterstitialAdLoadCallback(
+          onAdLoaded: (InterstitialAd ad) {
+            print('$ad loaded');
+            _interstitialAd = ad;
+            _numInterstitialLoadAttempts = 0;
+          },
+          onAdFailedToLoad: (InterstitialAd ad, LoadAdError error) {
+            print('$ad failed to load: $error.');
+            ad.dispose();
+            _numInterstitialLoadAttempts += 1;
+            _interstitialAd = null;
+            if (_numInterstitialLoadAttempts <= maxFailedLoadAttempts) {
+              createInterstitialAd();
+            }
+          },
+        ));
+  }
+
+  void showInterstitialAd() {
+    if (_interstitialAd == null) {
+      print('Warning: attempt to show interstitial before loaded.');
+      return;
+    }
+    _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (InterstitialAd ad) =>
+          print('ad onAdShowedFullScreenContent.'),
+      onAdDismissedFullScreenContent: (InterstitialAd ad) {
+        print('$ad onAdDismissedFullScreenContent.');
+        ad.dispose();
+        createInterstitialAd();
+      },
+      onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+        print('$ad onAdFailedToShowFullScreenContent: $error');
+        ad.dispose();
+        createInterstitialAd();
+      },
+    );
+    _interstitialAd!.show();
+    _interstitialAd = null;
   }
 
   void createRewardedAd() {
-    _rewardedAd ??= RewardedAd(
-      adUnitId: RewardedAd.testAdUnitId,
-      request: request,
-      listener: AdListener(
-          onAdLoaded: (Ad ad) {
-            print('${ad.runtimeType} loaded.');
-            _rewardedReady = true;
+    RewardedAd.load(
+        adUnitId: RewardedAd.testAdUnitId,
+        request: request,
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (RewardedAd ad) {
+            print('$ad loaded.');
+            _rewardedAd = ad;
+            _numRewardedLoadAttempts = 0;
           },
-          onAdFailedToLoad: (Ad ad, LoadAdError error) {
-            print('${ad.runtimeType} failed to load: $error');
+          onAdFailedToLoad: (RewardedAd ad, LoadAdError error) {
+            print('$ad failed to load: $error');
             ad.dispose();
             _rewardedAd = null;
-            createRewardedAd();
+            _numRewardedLoadAttempts += 1;
+            if (_numRewardedLoadAttempts <= maxFailedLoadAttempts) {
+              createRewardedAd();
+            }
           },
-          onAdOpened: (Ad ad) => print('${ad.runtimeType} onAdOpened.'),
-          onAdClosed: (Ad ad) {
-            print('${ad.runtimeType} closed.');
-            ad.dispose();
-            createRewardedAd();
-          },
-          onApplicationExit: (Ad ad) =>
-              print('${ad.runtimeType} onApplicationExit.'),
-          onRewardedAdUserEarnedReward: (RewardedAd ad, RewardItem reward) {
-            print(
-              '$RewardedAd with reward $RewardItem(${reward.amount}, ${reward.type})',
-            );
-          }),
-    )..load();
+        ));
+  }
+
+  void showRewardedAd() {
+    if (_rewardedAd == null) {
+      print('Warning: attempt to show rewarded before loaded.');
+      return;
+    }
+    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+      onAdShowedFullScreenContent: (RewardedAd ad) =>
+          print('ad onAdShowedFullScreenContent.'),
+      onAdDismissedFullScreenContent: (RewardedAd ad) {
+        print('$ad onAdDismissedFullScreenContent.');
+        ad.dispose();
+        createRewardedAd();
+      },
+      onAdFailedToShowFullScreenContent: (RewardedAd ad, AdError error) {
+        print('$ad onAdFailedToShowFullScreenContent: $error');
+        ad.dispose();
+        createRewardedAd();
+      },
+    );
+
+    _rewardedAd!.show(onUserEarnedReward: (RewardedAd ad, RewardItem reward) {
+      print('$ad with reward $RewardItem(${reward.amount}, ${reward.type}');
+    });
+    _rewardedAd = null;
   }
 
   @override
@@ -138,16 +173,10 @@ class _MyAppState extends State<MyApp> {
                 onSelected: (String result) {
                   switch (result) {
                     case 'InterstitialAd':
-                      if (!_interstitialReady) return;
-                      _interstitialAd!.show();
-                      _interstitialReady = false;
-                      _interstitialAd = null;
+                      showInterstitialAd();
                       break;
                     case 'RewardedAd':
-                      if (!_rewardedReady) return;
-                      _rewardedAd!.show();
-                      _rewardedReady = false;
-                      _rewardedAd = null;
+                      showRewardedAd();
                       break;
                     case 'ReusableInlineExample':
                       Navigator.push(
@@ -201,7 +230,7 @@ class _MyAppState extends State<MyApp> {
                 if (adIndex % 3 == 0) {
                   adWidget = BannerAdWidget(AdSize.banner);
                 } else if (adIndex % 3 == 1) {
-                  adWidget = PublisherBannerAdWidget(AdSize.largeBanner);
+                  adWidget = AdManagerBannerAdWidget(AdSize.largeBanner);
                 } else {
                   adWidget = NativeAdWidget();
                 }
@@ -235,7 +264,7 @@ class BannerAdState extends State<BannerAdWidget> {
       adUnitId: BannerAd.testAdUnitId,
       request: AdRequest(),
       size: widget.size,
-      listener: AdListener(
+      listener: BannerAdListener(
         onAdLoaded: (Ad ad) {
           print('$BannerAd loaded.');
           bannerCompleter.complete(ad as BannerAd);
@@ -247,7 +276,6 @@ class BannerAdState extends State<BannerAdWidget> {
         },
         onAdOpened: (Ad ad) => print('$BannerAd onAdOpened.'),
         onAdClosed: (Ad ad) => print('$BannerAd onAdClosed.'),
-        onApplicationExit: (Ad ad) => print('$BannerAd onApplicationExit.'),
       ),
     );
     Future<void>.delayed(Duration(seconds: 1), () => _bannerAd.load());
@@ -291,41 +319,39 @@ class BannerAdState extends State<BannerAdWidget> {
   }
 }
 
-class PublisherBannerAdWidget extends StatefulWidget {
-  PublisherBannerAdWidget(this.size);
+class AdManagerBannerAdWidget extends StatefulWidget {
+  AdManagerBannerAdWidget(this.size);
 
   final AdSize size;
 
   @override
-  State<StatefulWidget> createState() => PublisherBannerAdState();
+  State<StatefulWidget> createState() => AdManagerBannerAdState();
 }
 
-class PublisherBannerAdState extends State<PublisherBannerAdWidget> {
-  late PublisherBannerAd _bannerAd;
-  final Completer<PublisherBannerAd> bannerCompleter =
-      Completer<PublisherBannerAd>();
+class AdManagerBannerAdState extends State<AdManagerBannerAdWidget> {
+  late AdManagerBannerAd _bannerAd;
+  final Completer<AdManagerBannerAd> bannerCompleter =
+      Completer<AdManagerBannerAd>();
 
   @override
   void initState() {
     super.initState();
-    _bannerAd = PublisherBannerAd(
+    _bannerAd = AdManagerBannerAd(
       adUnitId: '/6499/example/banner',
-      request: PublisherAdRequest(nonPersonalizedAds: true),
+      request: AdManagerAdRequest(nonPersonalizedAds: true),
       sizes: <AdSize>[widget.size],
-      listener: AdListener(
+      listener: AdManagerBannerAdListener(
         onAdLoaded: (Ad ad) {
-          print('$PublisherBannerAd loaded.');
-          bannerCompleter.complete(ad as PublisherBannerAd);
+          print('$AdManagerBannerAd loaded.');
+          bannerCompleter.complete(ad as AdManagerBannerAd);
         },
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
           ad.dispose();
-          print('$PublisherBannerAd failedToLoad: $error');
+          print('$AdManagerBannerAd failedToLoad: $error');
           bannerCompleter.completeError(error);
         },
-        onAdOpened: (Ad ad) => print('$PublisherBannerAd onAdOpened.'),
-        onAdClosed: (Ad ad) => print('$PublisherBannerAd onAdClosed.'),
-        onApplicationExit: (Ad ad) =>
-            print('$PublisherBannerAd onApplicationExit.'),
+        onAdOpened: (Ad ad) => print('$AdManagerBannerAd onAdOpened.'),
+        onAdClosed: (Ad ad) => print('$AdManagerBannerAd onAdClosed.'),
       ),
     );
     Future<void>.delayed(Duration(seconds: 1), () => _bannerAd.load());
@@ -339,10 +365,10 @@ class PublisherBannerAdState extends State<PublisherBannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<PublisherBannerAd>(
+    return FutureBuilder<AdManagerBannerAd>(
       future: bannerCompleter.future,
       builder:
-          (BuildContext context, AsyncSnapshot<PublisherBannerAd> snapshot) {
+          (BuildContext context, AsyncSnapshot<AdManagerBannerAd> snapshot) {
         Widget child;
 
         switch (snapshot.connectionState) {
@@ -355,7 +381,7 @@ class PublisherBannerAdState extends State<PublisherBannerAdWidget> {
             if (snapshot.hasData) {
               child = AdWidget(ad: _bannerAd);
             } else {
-              child = Text('Error loading $PublisherBannerAd');
+              child = Text('Error loading $AdManagerBannerAd');
             }
         }
 
@@ -386,7 +412,7 @@ class NativeAdState extends State<NativeAdWidget> {
       adUnitId: NativeAd.testAdUnitId,
       request: AdRequest(),
       factoryId: 'adFactoryExample',
-      listener: AdListener(
+      listener: NativeAdListener(
         onAdLoaded: (Ad ad) {
           print('$NativeAd loaded.');
           nativeAdCompleter.complete(ad as NativeAd);
@@ -398,7 +424,6 @@ class NativeAdState extends State<NativeAdWidget> {
         },
         onAdOpened: (Ad ad) => print('$NativeAd onAdOpened.'),
         onAdClosed: (Ad ad) => print('$NativeAd onAdClosed.'),
-        onApplicationExit: (Ad ad) => print('$NativeAd onApplicationExit.'),
       ),
     );
     Future<void>.delayed(Duration(seconds: 1), () => _nativeAd.load());
