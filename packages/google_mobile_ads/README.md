@@ -228,6 +228,11 @@ The table below lists the standard banner sizes.
    <td>Use <code>getSmartBanner(Orientation)</code>
    </td>
   </tr>
+  <tr>
+   <td>Provided width x Adaptive height</td>
+   <td><a href="https://developers.google.com/admob/android/banner/adaptive">Adaptive Banner</a></td>
+   <td>Use <code>getAnchoredAdaptiveBannerAdSize(Orientation, int)</code></td>
+  </tr>
 </table>
 
 
@@ -807,7 +812,7 @@ which are used to support [custom targeting](https://support.google.com/admanage
 final AdManagerAdRequest request = AdManagerAdRequest(
   keywords: <String>['flutterio', 'beautiful apps'],
   contentUrl: 'https://flutter.dev',
-  customTargeting: <String, String>{'some', 'targeting'},
+  customTargeting: <String, String>{'some': 'targeting'},
   customTargetingLists: <String, List<String>>{'favoriteColors': <String>['red', 'yellow']},
 );
 ```

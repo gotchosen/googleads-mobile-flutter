@@ -14,6 +14,8 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/src/ad_instance_manager.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:flutter/widgets.dart';
@@ -25,7 +27,7 @@ void main() {
 
   group('GoogleMobileAds', () {
     final List<MethodCall> log = <MethodCall>[];
-    final MessageCodec<dynamic> codec = AdMessageCodec();
+    final AdMessageCodec codec = AdMessageCodec();
 
     setUp(() async {
       log.clear();
