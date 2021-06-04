@@ -522,6 +522,8 @@ class AdMessageCodec extends StandardMessageCodec {
   static const int _valueAdError = 139;
   static const int _valueResponseInfo = 140;
   static const int _valueAdapterResponseInfo = 141;
+  static const int _valueAnchoredAdaptiveBannerAdSize = 142;
+  static const int _valueSmartBannerAdSize = 143;
 
   @override
   void writeValue(WriteBuffer buffer, dynamic value) {

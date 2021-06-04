@@ -27,7 +27,9 @@ typedef NS_ENUM(NSInteger, FLTAdMobField) {
   FLTAdmobFieldServerSideVerificationOptions = 138,
   FLTAdmobFieldAdError = 139,
   FLTAdmobFieldGadResponseInfo = 140,
-  FLTAdmobFieldGADAdNetworkResponseInfo = 141
+  FLTAdmobFieldGADAdNetworkResponseInfo = 141,
+  FLTAdmobFieldAnchoredAdaptiveBannerAdSize = 142,
+  FLTAdmobFieldSmartBannerAdSize = 143,
 };
 
 @interface FLTGoogleMobileAdsReader : FlutterStandardReader
@@ -96,20 +98,21 @@ typedef NS_ENUM(NSInteger, FLTAdMobField) {
       NSString *responseIdentifier = [self readValueOfType:[self readByte]];
       NSString *adNetworkClassName = [self readValueOfType:[self readByte]];
       NSArray<FLTGADAdNetworkResponseInfo *> *adNetworkInfoArray =
-        [self readValueOfType:[self readByte]];
-      FLTGADResponseInfo * gadResponseInfo = [[FLTGADResponseInfo alloc] init];
+          [self readValueOfType:[self readByte]];
+      FLTGADResponseInfo *gadResponseInfo = [[FLTGADResponseInfo alloc] init];
       gadResponseInfo.adNetworkClassName = adNetworkClassName;
       gadResponseInfo.responseIdentifier = responseIdentifier;
       gadResponseInfo.adNetworkInfoArray = adNetworkInfoArray;
       return gadResponseInfo;
     }
     case FLTAdmobFieldGADAdNetworkResponseInfo: {
-      NSString * adNetworkClassName = [self readValueOfType:[self readByte]];
+      NSString *adNetworkClassName = [self readValueOfType:[self readByte]];
       NSNumber *latency = [self readValueOfType:[self readByte]];
       NSString *dictionaryDescription = [self readValueOfType:[self readByte]];
       NSString *credentialsDescription = [self readValueOfType:[self readByte]];
       NSError *error = [self readValueOfType:[self readByte]];
-      FLTGADAdNetworkResponseInfo *adNetworkResponseInfo = [[FLTGADAdNetworkResponseInfo alloc] init];
+      FLTGADAdNetworkResponseInfo *adNetworkResponseInfo =
+          [[FLTGADAdNetworkResponseInfo alloc] init];
       adNetworkResponseInfo.adNetworkClassName = adNetworkClassName;
       adNetworkResponseInfo.latency = latency;
       adNetworkResponseInfo.dictionaryDescription = dictionaryDescription;
@@ -122,7 +125,7 @@ typedef NS_ENUM(NSInteger, FLTAdMobField) {
       NSString *domain = [self readValueOfType:[self readByte]];
       NSString *message = [self readValueOfType:[self readByte]];
       FLTGADResponseInfo *responseInfo = [self readValueOfType:[self readByte]];
-      FLTLoadAdError * loadAdError = [[FLTLoadAdError alloc] init];
+      FLTLoadAdError *loadAdError = [[FLTLoadAdError alloc] init];
       loadAdError.code = code.longValue;
       loadAdError.domain = domain;
       loadAdError.message = message;
@@ -135,7 +138,7 @@ typedef NS_ENUM(NSInteger, FLTAdMobField) {
       NSString *message = [self readValueOfType:[self readByte]];
       return [NSError errorWithDomain:domain
                                  code:code.longValue
-                             userInfo:@{ NSLocalizedDescriptionKey : message}];
+                             userInfo:@{NSLocalizedDescriptionKey : message}];
     }
     case FLTAdMobFieldAdManagerAdRequest: {
       FLTGAMAdRequest *request = [[FLTGAMAdRequest alloc] init];
@@ -204,6 +207,20 @@ typedef NS_ENUM(NSInteger, FLTAdMobField) {
     [self writeValue:size.orientation];
     [self writeValue:size.width];
     [self writeValue:size.height];
+  } else if ([value isKindOfClass:[FLTSmartBannerSize class]]) {
+    [self writeByte:FLTAdmobFieldSmartBannerAdSize];
+    FLTSmartBannerSize *size = (FLTSmartBannerSize *)value;
+    [self writeValue:size.orientation];
+  } else if ([value isKindOfClass:[FLTAdSize class]]) {
+    [self writeByte:FLTAdMobFieldAdSize];
+    [self writeValue:value.width];
+    [self writeValue:value.height];
+  }
+}
+
+- (void)writeValue:(id _Nonnull)value {
+  if ([value isKindOfClass:[FLTAdSize class]]) {
+    [self writeAdSize:value];
   } else if ([value isKindOfClass:[FLTGAMAdRequest class]]) {
     [self writeByte:FLTAdMobFieldAdManagerAdRequest];
     FLTGAMAdRequest *request = value;

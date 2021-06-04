@@ -882,6 +882,37 @@ void main() {
       expect(result.type, 'type');
     });
 
+    test('encode/decode $AnchoredAdaptiveBannerAdSize', () async {
+      final ByteData byteData = codec.encodeMessage(
+          AnchoredAdaptiveBannerAdSize(Orientation.landscape,
+              width: 23, height: 34))!;
+
+      final AnchoredAdaptiveBannerAdSize result = codec.decodeMessage(byteData);
+      expect(result.orientation, Orientation.landscape);
+      expect(result.width, 23);
+      expect(result.height, 34);
+    });
+
+    test('encode/decode $SmartBannerAdSize', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      final ByteData byteData =
+          codec.encodeMessage(SmartBannerAdSize(Orientation.portrait))!;
+
+      final SmartBannerAdSize result = codec.decodeMessage(byteData);
+      expect(result.orientation, Orientation.portrait);
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final WriteBuffer expectedBuffer = WriteBuffer();
+      expectedBuffer.putUint8(143);
+
+      final WriteBuffer actualBuffer = WriteBuffer();
+      codec.writeAdSize(actualBuffer, SmartBannerAdSize(Orientation.portrait));
+      expect(
+        expectedBuffer.done().buffer.asInt8List(),
+        actualBuffer.done().buffer.asInt8List(),
+      );
+    });
+
     test('encode/decode $AdManagerAdRequest', () async {
       final ByteData byteData = codec.encodeMessage(AdManagerAdRequest(
         keywords: <String>['who'],
