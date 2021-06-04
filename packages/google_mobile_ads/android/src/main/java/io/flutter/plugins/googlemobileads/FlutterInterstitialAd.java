@@ -43,7 +43,7 @@ class FlutterInterstitialAd extends FlutterAd.FlutterOverlayAd {
 
   @Override
   void load() {
-    if (manager != null && adUnitId != null && request != null)
+    if (manager != null && adUnitId != null && request != null) {
       flutterAdLoader.loadInterstitial(
           manager.activity,
           adUnitId,
@@ -62,6 +62,7 @@ class FlutterInterstitialAd extends FlutterAd.FlutterOverlayAd {
                   FlutterInterstitialAd.this, new FlutterAd.FlutterLoadAdError(loadAdError));
             }
           });
+    }
   }
 
   @Override
