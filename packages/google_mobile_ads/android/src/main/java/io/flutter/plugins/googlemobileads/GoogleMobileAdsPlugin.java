@@ -22,10 +22,10 @@ import androidx.annotation.VisibleForTesting;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.RequestConfiguration;
-import com.google.android.gms.ads.formats.UnifiedNativeAd;
-import com.google.android.gms.ads.formats.UnifiedNativeAdView;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.nativead.NativeAdView;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.embedding.engine.plugins.activity.ActivityAware;
@@ -70,59 +70,58 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
   /** Constructor for testing. */
   @VisibleForTesting
   protected GoogleMobileAdsPlugin(
-      @Nullable FlutterPluginBinding pluginBinding, @Nullable AdInstanceManager instanceManager) {
+          @Nullable FlutterPluginBinding pluginBinding, @Nullable AdInstanceManager instanceManager) {
     this.pluginBinding = pluginBinding;
     this.instanceManager = instanceManager;
   }
 
   /**
-   * Interface used to display a {@link com.google.android.gms.ads.formats.UnifiedNativeAd}.
+   * Interface used to display a {@link com.google.android.gms.ads.nativead.NativeAd}.
    *
    * <p>Added to a {@link io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin} and creates
-   * {@link com.google.android.gms.ads.formats.UnifiedNativeAdView}s from Native Ads created in
-   * Dart.
+   * {@link com.google.android.gms.ads.nativead.NativeAdView}s from Native Ads created in Dart.
    */
   public interface NativeAdFactory {
     /**
-     * Creates a {@link com.google.android.gms.ads.formats.UnifiedNativeAdView} with a {@link
-     * com.google.android.gms.ads.formats.UnifiedNativeAd}.
+     * Creates a {@link com.google.android.gms.ads.nativead.NativeAdView} with a {@link
+     * com.google.android.gms.ads.nativead.NativeAd}.
      *
      * @param nativeAd Ad information used to create a {@link
-     *     com.google.android.gms.ads.formats.UnifiedNativeAdView}
+     *     com.google.android.gms.ads.nativead.NativeAd}
      * @param customOptions Used to pass additional custom options to create the {@link
-     *     com.google.android.gms.ads.formats.UnifiedNativeAdView}. Nullable.
-     * @return a {@link com.google.android.gms.ads.formats.UnifiedNativeAdView} that is overlaid on
-     *     top of the FlutterView.
+     *     com.google.android.gms.ads.nativead.NativeAdView}. Nullable.
+     * @return a {@link com.google.android.gms.ads.nativead.NativeAdView} that is overlaid on top of
+     *     the FlutterView.
      */
-    UnifiedNativeAdView createNativeAd(UnifiedNativeAd nativeAd, Map<String, Object> customOptions);
+    NativeAdView createNativeAd(NativeAd nativeAd, Map<String, Object> customOptions);
   }
 
   /**
    * Registers a {@link io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.NativeAdFactory}
-   * used to create {@link com.google.android.gms.ads.formats.UnifiedNativeAdView}s from a Native Ad
+   * used to create {@link com.google.android.gms.ads.nativead.NativeAdView}s from a Native Ad
    * created in Dart.
    *
    * @param engine maintains access to a GoogleMobileAdsPlugin instance.
    * @param factoryId a unique identifier for the ad factory. The Native Ad created in Dart includes
    *     a parameter that refers to this.
-   * @param nativeAdFactory creates {@link com.google.android.gms.ads.formats.UnifiedNativeAdView}s
-   *     when Flutter NativeAds are created.
+   * @param nativeAdFactory creates {@link com.google.android.gms.ads.nativead.NativeAdView}s when
+   *     Flutter NativeAds are created.
    * @return whether the factoryId is unique and the nativeAdFactory was successfully added.
    */
   public static boolean registerNativeAdFactory(
-      FlutterEngine engine, String factoryId, NativeAdFactory nativeAdFactory) {
+          FlutterEngine engine, String factoryId, NativeAdFactory nativeAdFactory) {
     final GoogleMobileAdsPlugin gmaPlugin =
-        (GoogleMobileAdsPlugin) engine.getPlugins().get(GoogleMobileAdsPlugin.class);
+            (GoogleMobileAdsPlugin) engine.getPlugins().get(GoogleMobileAdsPlugin.class);
     return registerNativeAdFactory(gmaPlugin, factoryId, nativeAdFactory);
   }
 
   private static boolean registerNativeAdFactory(
-      GoogleMobileAdsPlugin plugin, String factoryId, NativeAdFactory nativeAdFactory) {
+          GoogleMobileAdsPlugin plugin, String factoryId, NativeAdFactory nativeAdFactory) {
     if (plugin == null) {
       final String message =
-          String.format(
-              "Could not find a %s instance. The plugin may have not been registered.",
-              GoogleMobileAdsPlugin.class.getSimpleName());
+              String.format(
+                      "Could not find a %s instance. The plugin may have not been registered.",
+                      GoogleMobileAdsPlugin.class.getSimpleName());
       throw new IllegalStateException(message);
     }
 
@@ -131,7 +130,7 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
 
   /**
    * Unregisters a {@link io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.NativeAdFactory}
-   * used to create {@link com.google.android.gms.ads.formats.UnifiedNativeAdView}s from a Native Ad
+   * used to create {@link com.google.android.gms.ads.nativead.NativeAdView}s from a Native Ad
    * created in Dart.
    *
    * @param engine maintains access to a GoogleMobileAdsPlugin instance.
@@ -153,8 +152,8 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
   private boolean addNativeAdFactory(String factoryId, NativeAdFactory nativeAdFactory) {
     if (nativeAdFactories.containsKey(factoryId)) {
       final String errorMessage =
-          String.format(
-              "A NativeAdFactory with the following factoryId already exists: %s", factoryId);
+              String.format(
+                      "A NativeAdFactory with the following factoryId already exists: %s", factoryId);
       Log.e(GoogleMobileAdsPlugin.class.getSimpleName(), errorMessage);
       return false;
     }
@@ -168,17 +167,17 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
   }
 
   private void initializePlugin(
-      Activity activity, BinaryMessenger messenger, PlatformViewRegistry viewRegistry) {
+          Activity activity, BinaryMessenger messenger, PlatformViewRegistry viewRegistry) {
     final MethodChannel channel =
-        new MethodChannel(
-            messenger,
-            "plugins.flutter.io/google_mobile_ads",
-            new StandardMethodCodec(new AdMessageCodec(activity)));
+            new MethodChannel(
+                    messenger,
+                    "plugins.flutter.io/google_mobile_ads",
+                    new StandardMethodCodec(new AdMessageCodec(activity)));
     channel.setMethodCallHandler(this);
     instanceManager = new AdInstanceManager(activity, messenger);
     viewRegistry.registerViewFactory(
-        "plugins.flutter.io/google_mobile_ads/ad_widget",
-        new GoogleMobileAdsViewFactory(instanceManager));
+            "plugins.flutter.io/google_mobile_ads/ad_widget",
+            new GoogleMobileAdsViewFactory(instanceManager));
   }
 
   @Override
@@ -195,9 +194,9 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
   public void onAttachedToActivity(ActivityPluginBinding binding) {
     activityBinding = binding;
     initializePlugin(
-        binding.getActivity(),
-        pluginBinding.getBinaryMessenger(),
-        pluginBinding.getPlatformViewRegistry());
+            binding.getActivity(),
+            pluginBinding.getBinaryMessenger(),
+            pluginBinding.getPlatformViewRegistry());
   }
 
   @Override
@@ -228,13 +227,13 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
 
       case "MobileAds#initialize":
         MobileAds.initialize(
-            instanceManager.activity,
-            new OnInitializationCompleteListener() {
-              @Override
-              public void onInitializationComplete(InitializationStatus initializationStatus) {
-                result.success(new FlutterInitializationStatus(initializationStatus));
-              }
-            });
+                instanceManager.activity,
+                new OnInitializationCompleteListener() {
+                  @Override
+                  public void onInitializationComplete(InitializationStatus initializationStatus) {
+                    result.success(new FlutterInitializationStatus(initializationStatus));
+                  }
+                });
         break;
       case "MobileAds#updateRequestConfiguration":
         RequestConfiguration.Builder builder = MobileAds.getRequestConfiguration().toBuilder();
@@ -259,12 +258,12 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
         break;
       case "loadBannerAd":
         final FlutterBannerAd bannerAd =
-            new FlutterBannerAd.Builder()
-                .setManager(instanceManager)
-                .setAdUnitId(call.<String>argument("adUnitId"))
-                .setRequest(call.<FlutterAdRequest>argument("request"))
-                .setSize(call.<FlutterAdSize>argument("size"))
-                .build();
+                new FlutterBannerAd(
+                        instanceManager,
+                        call.<String>argument("adUnitId"),
+                        call.<FlutterAdRequest>argument("request"),
+                        call.<FlutterAdSize>argument("size"),
+                        new BannerAdCreator(instanceManager.activity));
         instanceManager.trackAd(bannerAd, call.<Integer>argument("adId"));
         bannerAd.load();
         result.success(null);
@@ -279,25 +278,25 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
         }
 
         final FlutterNativeAd nativeAd =
-            new FlutterNativeAd.Builder()
-                .setManager(instanceManager)
-                .setAdUnitId(call.<String>argument("adUnitId"))
-                .setAdFactory(factory)
-                .setRequest(call.<FlutterAdRequest>argument("request"))
-                .setPublisherRequest(call.<FlutterPublisherAdRequest>argument("publisherRequest"))
-                .setCustomOptions(call.<Map<String, Object>>argument("customOptions"))
-                .build();
+                new FlutterNativeAd.Builder()
+                        .setManager(instanceManager)
+                        .setAdUnitId(call.<String>argument("adUnitId"))
+                        .setAdFactory(factory)
+                        .setRequest(call.<FlutterAdRequest>argument("request"))
+                        .setAdManagerRequest(call.<FlutterAdManagerAdRequest>argument("adManagerRequest"))
+                        .setCustomOptions(call.<Map<String, Object>>argument("customOptions"))
+                        .build();
         instanceManager.trackAd(nativeAd, call.<Integer>argument("adId"));
         nativeAd.load();
         result.success(null);
         break;
       case "loadInterstitialAd":
         final FlutterInterstitialAd interstitial =
-            new FlutterInterstitialAd.Builder()
-                .setManager(instanceManager)
-                .setAdUnitId(call.<String>argument("adUnitId"))
-                .setRequest(call.<FlutterAdRequest>argument("request"))
-                .build();
+                new FlutterInterstitialAd(
+                        instanceManager,
+                        call.<String>argument("adUnitId"),
+                        call.<FlutterAdRequest>argument("request"),
+                        new FlutterAdLoader());
         instanceManager.trackAd(interstitial, call.<Integer>argument("adId"));
         interstitial.load();
         result.success(null);
@@ -305,25 +304,27 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
       case "loadRewardedAd":
         final String adUnitId = requireNonNull(call.<String>argument("adUnitId"));
         final FlutterAdRequest request = call.argument("request");
-        final FlutterPublisherAdRequest publisherRequest = call.argument("publisherRequest");
+        final FlutterAdManagerAdRequest adManagerRequest = call.argument("adManagerRequest");
         final FlutterServerSideVerificationOptions serverSideVerificationOptions =
-            call.argument("serverSideVerificationOptions");
+                call.argument("serverSideVerificationOptions");
 
         final FlutterRewardedAd rewardedAd;
         if (request != null) {
           rewardedAd =
-              new FlutterRewardedAd(
-                  requireNonNull(instanceManager),
-                  adUnitId,
-                  request,
-                  serverSideVerificationOptions);
-        } else if (publisherRequest != null) {
+                  new FlutterRewardedAd(
+                          requireNonNull(instanceManager),
+                          adUnitId,
+                          request,
+                          serverSideVerificationOptions,
+                          new FlutterAdLoader());
+        } else if (adManagerRequest != null) {
           rewardedAd =
-              new FlutterRewardedAd(
-                  requireNonNull(instanceManager),
-                  adUnitId,
-                  publisherRequest,
-                  serverSideVerificationOptions);
+                  new FlutterRewardedAd(
+                          requireNonNull(instanceManager),
+                          adUnitId,
+                          adManagerRequest,
+                          serverSideVerificationOptions,
+                          new FlutterAdLoader());
         } else {
           result.error("InvalidRequest", "A null or invalid ad request was provided.", null);
           break;
@@ -333,28 +334,28 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
         rewardedAd.load();
         result.success(null);
         break;
-      case "loadPublisherBannerAd":
-        final FlutterPublisherBannerAd publisherBannerAd =
-            new FlutterPublisherBannerAd.Builder()
-                .setManager(instanceManager)
-                .setAdUnitId(call.<String>argument("adUnitId"))
-                .setSizes(call.<List<FlutterAdSize>>argument("sizes"))
-                .setRequest(call.<FlutterPublisherAdRequest>argument("request"))
-                .setAdUnit()
-                .build();
-        instanceManager.trackAd(publisherBannerAd, call.<Integer>argument("adId"));
-        publisherBannerAd.load();
+      case "loadAdManagerBannerAd":
+        final FlutterAdManagerBannerAd adManagerBannerAd =
+                new FlutterAdManagerBannerAd(
+                        instanceManager,
+                        call.<String>argument("adUnitId"),
+                        call.<List<FlutterAdSize>>argument("sizes"),
+                        call.<FlutterAdManagerAdRequest>argument("request"),
+                        new BannerAdCreator(instanceManager.activity));
+        instanceManager.trackAd(adManagerBannerAd, call.<Integer>argument("adId"));
+        adManagerBannerAd.load();
         result.success(null);
         break;
-      case "loadPublisherInterstitialAd":
-        final FlutterPublisherInterstitialAd publisherInterstitialAd =
-            new FlutterPublisherInterstitialAd(
-                requireNonNull(instanceManager),
-                requireNonNull(call.<String>argument("adUnitId")),
-                call.<FlutterPublisherAdRequest>argument("request"));
+      case "loadAdManagerInterstitialAd":
+        final FlutterAdManagerInterstitialAd adManagerInterstitialAd =
+                new FlutterAdManagerInterstitialAd(
+                        requireNonNull(instanceManager),
+                        requireNonNull(call.<String>argument("adUnitId")),
+                        call.<FlutterAdManagerAdRequest>argument("request"),
+                        new FlutterAdLoader());
         instanceManager.trackAd(
-            publisherInterstitialAd, requireNonNull(call.<Integer>argument("adId")));
-        publisherInterstitialAd.load();
+                adManagerInterstitialAd, requireNonNull(call.<Integer>argument("adId")));
+        adManagerInterstitialAd.load();
         result.success(null);
         break;
       case "disposeAd":
@@ -371,15 +372,15 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
         break;
       case "AdSize#getAnchoredAdaptiveBannerAdSize":
         final FlutterAdSize.AnchoredAdaptiveBannerAdSize size =
-            new FlutterAdSize.AnchoredAdaptiveBannerAdSize(
-                activityBinding.getActivity(),
-                new FlutterAdSize.AdSizeFactory(),
-                call.<String>argument("orientation"),
-                call.<Integer>argument("width"));
-        if (size.size == AdSize.INVALID) {
+                new FlutterAdSize.AnchoredAdaptiveBannerAdSize(
+                        activityBinding.getActivity(),
+                        new FlutterAdSize.AdSizeFactory(),
+                        call.<String>argument("orientation"),
+                        call.<Integer>argument("width"));
+        if (AdSize.INVALID.equals(size.size)) {
           result.success(null);
         } else {
-          result.success(size);
+          result.success(size.height);
         }
         break;
       default:

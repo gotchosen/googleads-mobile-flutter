@@ -11,7 +11,7 @@ class FlutterServerSideVerificationOptions {
   @Nullable private final String customData;
 
   public FlutterServerSideVerificationOptions(
-      @Nullable String userId, @Nullable String customData) {
+          @Nullable String userId, @Nullable String customData) {
     this.userId = userId;
     this.customData = customData;
   }

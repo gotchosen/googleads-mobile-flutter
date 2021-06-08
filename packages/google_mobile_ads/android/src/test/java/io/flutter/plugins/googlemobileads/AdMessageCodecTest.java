@@ -29,6 +29,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+/** Tests for {@link AdMessageCodec}. */
 public class AdMessageCodecTest {
   static class TestMessageCodec extends AdMessageCodec {
     TestMessageCodec(@NonNull Context context, @NonNull FlutterAdSize.AdSizeFactory adSizeFactory) {
@@ -127,8 +128,8 @@ public class AdMessageCodecTest {
     list.add("testValue2");
     targetingList.put("testKey", list);
 
-    FlutterPublisherAdRequest flutterPublisherAdRequest =
-        new FlutterPublisherAdRequest.Builder()
+    FlutterAdManagerAdRequest flutterAdManagerAdRequest =
+        new FlutterAdManagerAdRequest.Builder()
             .setContentUrl("test-content-url")
             .setCustomTargeting(targeting)
             .setCustomTargetingLists(targetingList)
@@ -136,11 +137,11 @@ public class AdMessageCodecTest {
             .setNonPersonalizedAds(true)
             .build();
 
-    ByteBuffer message = testCodec.encodeMessage(flutterPublisherAdRequest);
+    ByteBuffer message = testCodec.encodeMessage(flutterAdManagerAdRequest);
 
-    FlutterPublisherAdRequest decodedPublisherAdRequest =
-        (FlutterPublisherAdRequest) testCodec.decodeMessage((ByteBuffer) message.position(0));
-    assertEquals(decodedPublisherAdRequest, flutterPublisherAdRequest);
+    FlutterAdManagerAdRequest decodedAdManagerAdRequest =
+        (FlutterAdManagerAdRequest) testCodec.decodeMessage((ByteBuffer) message.position(0));
+    assertEquals(decodedAdManagerAdRequest, flutterAdManagerAdRequest);
   }
 
   @Test
