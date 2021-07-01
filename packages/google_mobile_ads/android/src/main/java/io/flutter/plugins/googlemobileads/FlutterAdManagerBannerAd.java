@@ -102,25 +102,25 @@ class FlutterAdManagerBannerAd extends FlutterAd implements FlutterAdLoadedListe
 
   @Override
   public void onAdLoaded() {
-    if (adView != null) {
-      manager.onAdLoaded(adId, adView.getResponseInfo());
+    if (view != null) {
+      manager.onAdLoaded(adId, view.getResponseInfo());
     }
   }
 
   @Nullable
   @Override
   PlatformView getPlatformView() {
-    if (adView == null) {
+    if (view == null) {
       return null;
     }
-    return new FlutterPlatformView(adView);
+    return new FlutterPlatformView(view);
   }
 
   @Override
   void dispose() {
-    if (adView != null) {
-      adView.destroy();
-      adView = null;
+    if (view != null) {
+      view.destroy();
+      view = null;
     }
   }
 
