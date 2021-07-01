@@ -258,12 +258,13 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
         break;
       case "loadBannerAd":
         final FlutterBannerAd bannerAd =
-                new FlutterBannerAd(
-                        instanceManager,
-                        call.<String>argument("adUnitId"),
-                        call.<FlutterAdRequest>argument("request"),
-                        call.<FlutterAdSize>argument("size"),
-                        new BannerAdCreator(instanceManager.activity));
+            new FlutterBannerAd(
+                call.<Integer>argument("adId"),
+                instanceManager,
+                call.<String>argument("adUnitId"),
+                call.<FlutterAdRequest>argument("request"),
+                call.<FlutterAdSize>argument("size"),
+                new BannerAdCreator(instanceManager.activity));
         instanceManager.trackAd(bannerAd, call.<Integer>argument("adId"));
         bannerAd.load();
         result.success(null);
@@ -278,25 +279,27 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
         }
 
         final FlutterNativeAd nativeAd =
-                new FlutterNativeAd.Builder()
-                        .setManager(instanceManager)
-                        .setAdUnitId(call.<String>argument("adUnitId"))
-                        .setAdFactory(factory)
-                        .setRequest(call.<FlutterAdRequest>argument("request"))
-                        .setAdManagerRequest(call.<FlutterAdManagerAdRequest>argument("adManagerRequest"))
-                        .setCustomOptions(call.<Map<String, Object>>argument("customOptions"))
-                        .build();
+            new FlutterNativeAd.Builder()
+                .setManager(instanceManager)
+                .setAdUnitId(call.<String>argument("adUnitId"))
+                .setAdFactory(factory)
+                .setRequest(call.<FlutterAdRequest>argument("request"))
+                .setAdManagerRequest(call.<FlutterAdManagerAdRequest>argument("adManagerRequest"))
+                .setCustomOptions(call.<Map<String, Object>>argument("customOptions"))
+                .setId(call.<Integer>argument("adId"))
+                .build();
         instanceManager.trackAd(nativeAd, call.<Integer>argument("adId"));
         nativeAd.load();
         result.success(null);
         break;
       case "loadInterstitialAd":
         final FlutterInterstitialAd interstitial =
-                new FlutterInterstitialAd(
-                        instanceManager,
-                        call.<String>argument("adUnitId"),
-                        call.<FlutterAdRequest>argument("request"),
-                        new FlutterAdLoader());
+            new FlutterInterstitialAd(
+                call.<Integer>argument("adId"),
+                instanceManager,
+                call.<String>argument("adUnitId"),
+                call.<FlutterAdRequest>argument("request"),
+                new FlutterAdLoader());
         instanceManager.trackAd(interstitial, call.<Integer>argument("adId"));
         interstitial.load();
         result.success(null);
@@ -311,20 +314,22 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
         final FlutterRewardedAd rewardedAd;
         if (request != null) {
           rewardedAd =
-                  new FlutterRewardedAd(
-                          requireNonNull(instanceManager),
-                          adUnitId,
-                          request,
-                          serverSideVerificationOptions,
-                          new FlutterAdLoader());
+              new FlutterRewardedAd(
+                  call.<Integer>argument("adId"),
+                  requireNonNull(instanceManager),
+                  adUnitId,
+                  request,
+                  serverSideVerificationOptions,
+                  new FlutterAdLoader());
         } else if (adManagerRequest != null) {
           rewardedAd =
-                  new FlutterRewardedAd(
-                          requireNonNull(instanceManager),
-                          adUnitId,
-                          adManagerRequest,
-                          serverSideVerificationOptions,
-                          new FlutterAdLoader());
+              new FlutterRewardedAd(
+                  call.<Integer>argument("adId"),
+                  requireNonNull(instanceManager),
+                  adUnitId,
+                  adManagerRequest,
+                  serverSideVerificationOptions,
+                  new FlutterAdLoader());
         } else {
           result.error("InvalidRequest", "A null or invalid ad request was provided.", null);
           break;
@@ -336,23 +341,25 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
         break;
       case "loadAdManagerBannerAd":
         final FlutterAdManagerBannerAd adManagerBannerAd =
-                new FlutterAdManagerBannerAd(
-                        instanceManager,
-                        call.<String>argument("adUnitId"),
-                        call.<List<FlutterAdSize>>argument("sizes"),
-                        call.<FlutterAdManagerAdRequest>argument("request"),
-                        new BannerAdCreator(instanceManager.activity));
+            new FlutterAdManagerBannerAd(
+                call.<Integer>argument("adId"),
+                instanceManager,
+                call.<String>argument("adUnitId"),
+                call.<List<FlutterAdSize>>argument("sizes"),
+                call.<FlutterAdManagerAdRequest>argument("request"),
+                new BannerAdCreator(instanceManager.activity));
         instanceManager.trackAd(adManagerBannerAd, call.<Integer>argument("adId"));
         adManagerBannerAd.load();
         result.success(null);
         break;
       case "loadAdManagerInterstitialAd":
         final FlutterAdManagerInterstitialAd adManagerInterstitialAd =
-                new FlutterAdManagerInterstitialAd(
-                        requireNonNull(instanceManager),
-                        requireNonNull(call.<String>argument("adUnitId")),
-                        call.<FlutterAdManagerAdRequest>argument("request"),
-                        new FlutterAdLoader());
+            new FlutterAdManagerInterstitialAd(
+                call.<Integer>argument("adId"),
+                requireNonNull(instanceManager),
+                requireNonNull(call.<String>argument("adUnitId")),
+                call.<FlutterAdManagerAdRequest>argument("request"),
+                new FlutterAdLoader());
         instanceManager.trackAd(
                 adManagerInterstitialAd, requireNonNull(call.<Integer>argument("adId")));
         adManagerInterstitialAd.load();
