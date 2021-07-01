@@ -68,9 +68,12 @@
 - (instancetype _Nonnull)initWithOrientation:(NSString *_Nonnull)orientation {
   GADAdSize size;
   if ([orientation isEqualToString:@"portrait"]) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     size = kGADAdSizeSmartBannerPortrait;
   } else if ([orientation isEqualToString:@"landscape"]) {
     size = kGADAdSizeSmartBannerLandscape;
+#pragma clang diagnostic pop
   } else {
     NSLog(@"SmartBanner orientation should be 'portrait' or 'landscape': %@", orientation);
     return nil;
@@ -173,6 +176,14 @@
 }
 @end
 
+@interface FLTBaseAd ()
+@property(readwrite) NSNumber *_Nonnull adId;
+@end
+
+@implementation FLTBaseAd
+@synthesize adId;
+@end
+
 @implementation FLTBannerAd {
   GADBannerView *_bannerView;
   FLTAdRequest *_adRequest;
@@ -181,13 +192,25 @@
 - (instancetype)initWithAdUnitId:(NSString *_Nonnull)adUnitId
                             size:(FLTAdSize *_Nonnull)size
                          request:(FLTAdRequest *_Nonnull)request
-              rootViewController:(UIViewController *_Nonnull)rootViewController {
+              rootViewController:(UIViewController *_Nonnull)rootViewController
+                            adId:(NSNumber *_Nonnull)adId {
   self = [super init];
   if (self) {
     _adRequest = request;
     _bannerView = [[GADBannerView alloc] initWithAdSize:size.size];
     _bannerView.adUnitID = adUnitId;
+    self.adId = adId;
     self.bannerView.rootViewController = rootViewController;
+    __weak FLTBannerAd *weakSelf = self;
+    self.bannerView.paidEventHandler = ^(GADAdValue *_Nonnull value) {
+      if (weakSelf.manager == nil) {
+        return;
+      }
+      [weakSelf.manager onPaidEvent:weakSelf
+                              value:[[FLTAdValue alloc] initWithValue:value.value
+                                                            precision:(NSInteger)value.precision
+                                                         currencyCode:value.currencyCode]];
+    };
   }
   return self;
 }
@@ -204,33 +227,36 @@
 #pragma mark - GADBannerViewDelegate
 
 - (void)bannerViewDidReceiveAd:(GADBannerView *)bannerView {
-  [_manager onAdLoaded:self responseInfo:bannerView.responseInfo];
+  [manager onAdLoaded:self responseInfo:bannerView.responseInfo];
 }
 
 - (void)bannerView:(GADBannerView *)bannerView didFailToReceiveAdWithError:(NSError *)error {
-  [_manager onAdFailedToLoad:self error:error];
+  [manager onAdFailedToLoad:self error:error];
 }
 
 - (void)bannerViewDidRecordImpression:(GADBannerView *)bannerView {
-  [_manager onBannerImpression:self];
+  [manager onBannerImpression:self];
 }
 
 - (void)bannerViewWillPresentScreen:(GADBannerView *)bannerView {
-  [_manager onBannerWillPresentScreen:self];
+  [manager onBannerWillPresentScreen:self];
 }
 
 - (void)bannerViewWillDismissScreen:(GADBannerView *)bannerView {
-  [_manager onBannerWillDismissScreen:self];
+  [manager onBannerWillDismissScreen:self];
 }
 
 - (void)bannerViewDidDismissScreen:(GADBannerView *)bannerView {
-  [_manager onBannerDidDismissScreen:self];
+  [manager onBannerDidDismissScreen:self];
 }
 
 #pragma mark - FlutterPlatformView
 - (nonnull UIView *)view {
   return self.bannerView;
 }
+
+@synthesize manager;
+
 @end
 
 @implementation FLTGAMBannerAd {
@@ -242,7 +268,8 @@
 - (instancetype)initWithAdUnitId:(NSString *_Nonnull)adUnitId
                            sizes:(NSArray<FLTAdSize *> *_Nonnull)sizes
                          request:(FLTGAMAdRequest *_Nonnull)request
-              rootViewController:(UIViewController *_Nonnull)rootViewController {
+              rootViewController:(UIViewController *_Nonnull)rootViewController
+                            adId:(NSNumber *_Nonnull)adId {
   self = [super init];
   if (self) {
     Prebid.shared.prebidServerAccountId = @"11011";
@@ -251,7 +278,8 @@
     if(err == nil)
 
     _bannerUnit = [[BannerAdUnit alloc] initWithConfigId:@"20685367" size:CGSizeMake(320, 50)];
-        
+
+    self.adId = adId;
     _adRequest = request;
     _bannerView = [[GAMBannerView alloc] initWithAdSize:sizes[0].size];
     _bannerView.adUnitID = adUnitId;
@@ -264,6 +292,17 @@
       [validAdSizes addObject:NSValueFromGADAdSize(size.size)];
     }
     _bannerView.validAdSizes = validAdSizes;
+
+    __weak FLTGAMBannerAd *weakSelf = self;
+    self.bannerView.paidEventHandler = ^(GADAdValue *_Nonnull value) {
+      if (weakSelf.manager == nil) {
+        return;
+      }
+      [weakSelf.manager onPaidEvent:weakSelf
+                              value:[[FLTAdValue alloc] initWithValue:value.value
+                                                            precision:(NSInteger)value.precision
+                                                         currencyCode:value.currencyCode]];
+    };
   }
   return self;
 }
@@ -308,9 +347,11 @@
 
 - (instancetype)initWithAdUnitId:(NSString *_Nonnull)adUnitId
                          request:(FLTAdRequest *_Nonnull)request
-              rootViewController:(UIViewController *_Nonnull)rootViewController {
+              rootViewController:(UIViewController *_Nonnull)rootViewController
+                            adId:(NSNumber *_Nonnull)adId {
   self = [super init];
   if (self) {
+    self.adId = adId;
     _adRequest = request;
     _adUnitId = [adUnitId copy];
     _rootViewController = rootViewController;
@@ -336,6 +377,18 @@
                       }
                       ad.fullScreenContentDelegate = self;
                       self->_interstitialView = ad;
+                      __weak FLTInterstitialAd *weakSelf = self;
+                      ad.paidEventHandler = ^(GADAdValue *_Nonnull value) {
+                        if (weakSelf.manager == nil) {
+                          return;
+                        }
+                        [weakSelf.manager
+                            onPaidEvent:weakSelf
+                                  value:[[FLTAdValue alloc] initWithValue:value.value
+                                                                precision:(NSInteger)value.precision
+                                                             currencyCode:value.currencyCode]];
+                      };
+
                       [self.manager onAdLoaded:self responseInfo:ad.responseInfo];
                     }];
 }
@@ -384,9 +437,11 @@
 
 - (instancetype)initWithAdUnitId:(NSString *_Nonnull)adUnitId
                          request:(FLTGAMAdRequest *_Nonnull)request
-              rootViewController:(UIViewController *_Nonnull)rootViewController {
+              rootViewController:(UIViewController *_Nonnull)rootViewController
+                            adId:(NSNumber *_Nonnull)adId {
   self = [super init];
   if (self) {
+    self.adId = adId;
     _adRequest = request;
     _adUnitId = [adUnitId copy];
     _rootViewController = rootViewController;
@@ -399,18 +454,31 @@
 }
 
 - (void)load {
-  [GAMInterstitialAd loadWithAdManagerAdUnitID:_adUnitId
-                                       request:[_adRequest asGAMRequest]
-                             completionHandler:^(GAMInterstitialAd *ad, NSError *error) {
-                               if (error) {
-                                 [self.manager onAdFailedToLoad:self error:error];
-                                 return;
-                               }
-                               [self.manager onAdLoaded:self responseInfo:ad.responseInfo];
-                               ad.fullScreenContentDelegate = self;
-                               ad.appEventDelegate = self;
-                               self->_insterstitial = ad;
-                             }];
+  [GAMInterstitialAd
+      loadWithAdManagerAdUnitID:_adUnitId
+                        request:[_adRequest asGAMRequest]
+              completionHandler:^(GAMInterstitialAd *ad, NSError *error) {
+                if (error) {
+                  [self.manager onAdFailedToLoad:self error:error];
+                  return;
+                }
+                [self.manager onAdLoaded:self responseInfo:ad.responseInfo];
+                ad.fullScreenContentDelegate = self;
+                ad.appEventDelegate = self;
+                __weak FLTGAMInterstitialAd *weakSelf = self;
+                ad.paidEventHandler = ^(GADAdValue *_Nonnull value) {
+                  if (weakSelf.manager == nil) {
+                    return;
+                  }
+                  [weakSelf.manager
+                      onPaidEvent:weakSelf
+                            value:[[FLTAdValue alloc] initWithValue:value.value
+                                                          precision:(NSInteger)value.precision
+                                                       currencyCode:value.currencyCode]];
+                };
+
+                self->_insterstitial = ad;
+              }];
 }
 
 - (void)show {
@@ -443,9 +511,11 @@
                           request:(FLTAdRequest *_Nonnull)request
                rootViewController:(UIViewController *_Nonnull)rootViewController
     serverSideVerificationOptions:
-        (FLTServerSideVerificationOptions *_Nullable)serverSideVerificationOptions {
+        (FLTServerSideVerificationOptions *_Nullable)serverSideVerificationOptions
+                             adId:(NSNumber *_Nonnull)adId {
   self = [super init];
   if (self) {
+    self.adId = adId;
     _adRequest = request;
     _rootViewController = rootViewController;
     _serverSideVerificationOptions = serverSideVerificationOptions;
@@ -482,7 +552,17 @@
                     rewardedAd.serverSideVerificationOptions =
                         [self->_serverSideVerificationOptions asGADServerSideVerificationOptions];
                   }
-
+                  __weak FLTRewardedAd *weakSelf = self;
+                  rewardedAd.paidEventHandler = ^(GADAdValue *_Nonnull value) {
+                    if (weakSelf.manager == nil) {
+                      return;
+                    }
+                    [weakSelf.manager
+                        onPaidEvent:weakSelf
+                              value:[[FLTAdValue alloc] initWithValue:value.value
+                                                            precision:(NSInteger)value.precision
+                                                         currencyCode:value.currencyCode]];
+                  };
                   rewardedAd.fullScreenContentDelegate = self;
                   self->_rewardedView = rewardedAd;
                   [self.manager onAdLoaded:self responseInfo:rewardedAd.responseInfo];
@@ -546,9 +626,11 @@
                                   request:(FLTAdRequest *_Nonnull)request
                           nativeAdFactory:(NSObject<FLTNativeAdFactory> *_Nonnull)nativeAdFactory
                             customOptions:(NSDictionary<NSString *, id> *_Nullable)customOptions
-                       rootViewController:(UIViewController *_Nonnull)rootViewController {
+                       rootViewController:(UIViewController *_Nonnull)rootViewController
+                                     adId:(NSNumber *_Nonnull)adId {
   self = [super init];
   if (self) {
+    self.adId = adId;
     _adUnitId = adUnitId;
     _adRequest = request;
     _nativeAdFactory = nativeAdFactory;
@@ -586,39 +668,52 @@
       [[NSNull null] isEqual:_customOptions] ? nil : _customOptions;
   _view = [_nativeAdFactory createNativeAd:nativeAd customOptions:customOptions];
   nativeAd.delegate = self;
-  [_manager onAdLoaded:self responseInfo:nativeAd.responseInfo];
+
+  __weak FLTNativeAd *weakSelf = self;
+  nativeAd.paidEventHandler = ^(GADAdValue *_Nonnull value) {
+    if (weakSelf.manager == nil) {
+      return;
+    }
+    [weakSelf.manager onPaidEvent:weakSelf
+                            value:[[FLTAdValue alloc] initWithValue:value.value
+                                                          precision:(NSInteger)value.precision
+                                                       currencyCode:value.currencyCode]];
+  };
+  [manager onAdLoaded:self responseInfo:nativeAd.responseInfo];
 }
 
 - (void)adLoader:(GADAdLoader *)adLoader didFailToReceiveAdWithError:(NSError *)error {
-  [_manager onAdFailedToLoad:self error:error];
+  [manager onAdFailedToLoad:self error:error];
 }
 
 #pragma mark - GADNativeAdDelegate
 
 - (void)nativeAdDidRecordClick:(GADNativeAd *)nativeAd {
-  [_manager onNativeAdClicked:self];
+  [manager onNativeAdClicked:self];
 }
 
 - (void)nativeAdDidRecordImpression:(GADNativeAd *)nativeAd {
-  [_manager onNativeAdImpression:self];
+  [manager onNativeAdImpression:self];
 }
 
 - (void)nativeAdWillPresentScreen:(GADNativeAd *)nativeAd {
-  [_manager onNativeAdWillPresentScreen:self];
+  [manager onNativeAdWillPresentScreen:self];
 }
 
 - (void)nativeAdWillDismissScreen:(nonnull GADNativeAd *)nativeAd {
-  [_manager onNativeAdWillDismissScreen:self];
+  [manager onNativeAdWillDismissScreen:self];
 }
 
 - (void)nativeAdDidDismissScreen:(GADNativeAd *)nativeAd {
-  [_manager onNativeAdDidDismissScreen:self];
+  [manager onNativeAdDidDismissScreen:self];
 }
 
 #pragma mark - FlutterPlatformView
 - (UIView *)view {
   return _view;
 }
+
+@synthesize manager;
 
 @end
 
@@ -645,5 +740,20 @@
 
 - (NSUInteger)hash {
   return _amount.hash | _type.hash;
+}
+@end
+
+@implementation FLTAdValue
+- (instancetype _Nonnull)initWithValue:(NSDecimalNumber *_Nonnull)value
+                             precision:(NSInteger)precision
+                          currencyCode:(NSString *_Nonnull)currencyCode {
+  self = [super init];
+  if (self) {
+    _valueMicros =
+        [value decimalNumberByMultiplyingBy:[[NSDecimalNumber alloc] initWithInteger:1000000]];
+    _precision = precision;
+    _currencyCode = currencyCode;
+  }
+  return self;
 }
 @end
