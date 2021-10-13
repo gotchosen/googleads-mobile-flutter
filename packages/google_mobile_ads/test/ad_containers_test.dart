@@ -40,6 +40,7 @@ void main() {
         switch (methodCall.method) {
           case 'MobileAds#updateRequestConfiguration':
           case 'MobileAds#setSameAppKeyEnabled':
+          case 'setImmersiveMode':
           case 'loadBannerAd':
           case 'loadNativeAd':
           case 'showAdWithoutView':
@@ -49,6 +50,8 @@ void main() {
           case 'loadAdManagerInterstitialAd':
           case 'loadAdManagerBannerAd':
             return Future<void>.value();
+          case 'getAdSize':
+            return Future<dynamic>.value(AdSize.banner);
           default:
             assert(false);
             return null;
@@ -99,6 +102,115 @@ void main() {
       ]);
     });
 
+    test('load rewarded ad and set immersive mode', () async {
+      RewardedAd? rewarded;
+      AdRequest request = AdRequest();
+      await RewardedAd.load(
+          adUnitId: RewardedAd.testAdUnitId,
+          request: request,
+          rewardedAdLoadCallback: RewardedAdLoadCallback(
+              onAdLoaded: (ad) {
+                rewarded = ad;
+              },
+              onAdFailedToLoad: (error) => null),
+          serverSideVerificationOptions: ServerSideVerificationOptions(
+            userId: 'test-user-id',
+            customData: 'test-custom-data',
+          ));
+
+      RewardedAd createdAd = instanceManager.adFor(0) as RewardedAd;
+      (createdAd).rewardedAdLoadCallback.onAdLoaded(createdAd);
+
+      expect(log, <Matcher>[
+        isMethodCall('loadRewardedAd', arguments: <String, dynamic>{
+          'adId': 0,
+          'adUnitId': RewardedAd.testAdUnitId,
+          'request': request,
+          'adManagerRequest': null,
+          'serverSideVerificationOptions':
+              rewarded!.serverSideVerificationOptions,
+        }),
+      ]);
+
+      expect(instanceManager.adFor(0), isNotNull);
+      expect(rewarded, createdAd);
+
+      log.clear();
+      await createdAd.setImmersiveMode(true);
+      expect(log, <Matcher>[
+        isMethodCall('setImmersiveMode',
+            arguments: {'adId': 0, 'immersiveModeEnabled': true})
+      ]);
+    });
+
+    test('load interstitial ad and set immersive mode', () async {
+      InterstitialAd? interstitial;
+      await InterstitialAd.load(
+        adUnitId: InterstitialAd.testAdUnitId,
+        request: AdRequest(),
+        adLoadCallback: InterstitialAdLoadCallback(
+            onAdLoaded: (ad) {
+              interstitial = ad;
+            },
+            onAdFailedToLoad: (error) => null),
+      );
+
+      InterstitialAd createdAd = (instanceManager.adFor(0) as InterstitialAd);
+      (createdAd).adLoadCallback.onAdLoaded(createdAd);
+
+      expect(log, <Matcher>[
+        isMethodCall('loadInterstitialAd', arguments: <String, dynamic>{
+          'adId': 0,
+          'adUnitId': InterstitialAd.testAdUnitId,
+          'request': interstitial!.request,
+        })
+      ]);
+
+      expect(instanceManager.adFor(0), isNotNull);
+
+      log.clear();
+      await createdAd.setImmersiveMode(false);
+      expect(log, <Matcher>[
+        isMethodCall('setImmersiveMode',
+            arguments: {'adId': 0, 'immersiveModeEnabled': false})
+      ]);
+    });
+
+    test('load ad manager interstitial and set immersive mode', () async {
+      AdManagerInterstitialAd? interstitial;
+      await AdManagerInterstitialAd.load(
+        adUnitId: 'test-id',
+        request: AdManagerAdRequest(),
+        adLoadCallback: AdManagerInterstitialAdLoadCallback(
+            onAdLoaded: (ad) {
+              interstitial = ad;
+            },
+            onAdFailedToLoad: (error) => null),
+      );
+
+      AdManagerInterstitialAd createdAd =
+          (instanceManager.adFor(0) as AdManagerInterstitialAd);
+      (createdAd).adLoadCallback.onAdLoaded(createdAd);
+
+      expect(log, <Matcher>[
+        isMethodCall('loadAdManagerInterstitialAd',
+            arguments: <String, dynamic>{
+              'adId': 0,
+              'adUnitId': 'test-id',
+              'request': interstitial!.request,
+            })
+      ]);
+
+      expect(instanceManager.adFor(0), isNotNull);
+
+      log.clear();
+      await createdAd.setImmersiveMode(true);
+      expect(log, <Matcher>[
+        isMethodCall('setImmersiveMode',
+            arguments: {'adId': 0, 'immersiveModeEnabled': true})
+      ]);
+    });
+
     test('load banner', () async {
       final BannerAd banner = BannerAd(
         adUnitId: BannerAd.testAdUnitId,
@@ -118,6 +230,9 @@ void main() {
       ]);
 
       expect(instanceManager.adFor(0), isNotNull);
+
+      AdSize? adSize = await banner.getPlatformAdSize();
+      expect(adSize!, AdSize.banner);
     });
 
     test('dispose banner', () async {
@@ -157,13 +272,24 @@ void main() {
 
     test('load native', () async {
       final Map<String, Object> options = <String, Object>{'a': 1, 'b': 2};
-
+      final NativeAdOptions nativeAdOptions = NativeAdOptions(
+          adChoicesPlacement: AdChoicesPlacement.bottomLeftCorner,
+          mediaAspectRatio: MediaAspectRatio.any,
+          videoOptions: VideoOptions(
+            clickToExpandRequested: true,
+            customControlsRequested: true,
+            startMuted: true,
+          ),
+          requestCustomMuteThisAd: false,
+          shouldRequestMultipleImages: true,
+          shouldReturnUrlsForImageAssets: false);
       final NativeAd native = NativeAd(
         adUnitId: NativeAd.testAdUnitId,
         factoryId: '0',
         customOptions: options,
         listener: NativeAdListener(),
         request: AdRequest(),
+        nativeAdOptions: nativeAdOptions,
       );
 
       await native.load();
@@ -174,6 +300,7 @@ void main() {
           'request': native.request,
           'adManagerRequest': null,
           'factoryId': '0',
+          'nativeAdOptions': nativeAdOptions,
           'customOptions': options,
         })
       ]);
@@ -200,6 +327,7 @@ void main() {
           'request': null,
           'adManagerRequest': native.adManagerRequest,
           'factoryId': '0',
+          'nativeAdOptions': null,
           'customOptions': options,
         })
       ]);
@@ -588,6 +716,9 @@ void main() {
 
       expect(instanceManager.adFor(0), banner);
       expect(instanceManager.adIdFor(banner), 0);
+
+      AdSize? adSize = await banner.getPlatformAdSize();
+      expect(adSize!, AdSize.banner);
     });
 
     test('onAdLoaded', () async {
@@ -1187,14 +1318,44 @@ void main() {
       expect(codec.decodeMessage(byteData), AdSize.banner);
     });
 
-    test('encode/decode AdRequest', () async {
+    test('encode/decode AdRequest Android', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+
       final AdRequest adRequest = AdRequest(
           keywords: <String>['1', '2', '3'],
           contentUrl: 'contentUrl',
-          nonPersonalizedAds: false);
+          nonPersonalizedAds: false,
+          neighboringContentUrls: <String>['url1.com', 'url2.com'],
+          httpTimeoutMillis: 12345,
+          location: LocationParams(
+              accuracy: 1.1, longitude: 25, latitude: 38, time: 1));
 
       final ByteData byteData = codec.encodeMessage(adRequest)!;
       expect(codec.decodeMessage(byteData), adRequest);
+    });
+
+    test('encode/decode AdRequest iOS', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
+      final AdRequest adRequest = AdRequest(
+          keywords: <String>['1', '2', '3'],
+          contentUrl: 'contentUrl',
+          nonPersonalizedAds: false,
+          neighboringContentUrls: <String>['url1.com', 'url2.com'],
+          httpTimeoutMillis: 12345,
+          location: LocationParams(
+              accuracy: 1.1, longitude: 25, latitude: 38, time: 1));
+
+      final ByteData byteData = codec.encodeMessage(adRequest)!;
+      AdRequest decoded = codec.decodeMessage(byteData);
+      expect(decoded.httpTimeoutMillis, null);
+      expect(decoded.neighboringContentUrls, adRequest.neighboringContentUrls);
+      expect(decoded.contentUrl, adRequest.contentUrl);
+      expect(decoded.nonPersonalizedAds, adRequest.nonPersonalizedAds);
+      expect(decoded.keywords, adRequest.keywords);
+      expect(decoded.location!.accuracy, 1.1);
+      expect(decoded.location!.longitude, 25);
+      expect(decoded.location!.latitude, 38);
     });
 
     test('encode/decode $LoadAdError', () async {
@@ -1223,15 +1384,72 @@ void main() {
       expect(result.type, 'type');
     });
 
+    test('encode/decode $InlineAdaptiveSize', () async {
+      ByteData byteData = codec.encodeMessage(
+          AdSize.getCurrentOrientationInlineAdaptiveBannerAdSize(100))!;
+
+      InlineAdaptiveSize result = codec.decodeMessage(byteData);
+      expect(result.orientation, null);
+      expect(result.width, 100);
+      expect(result.maxHeight, null);
+      expect(result.height, 0);
+
+      byteData = codec
+          .encodeMessage(AdSize.getPortraitInlineAdaptiveBannerAdSize(200))!;
+
+      result = codec.decodeMessage(byteData);
+      expect(result.orientation, Orientation.portrait);
+      expect(result.width, 200);
+      expect(result.maxHeight, null);
+      expect(result.height, 0);
+
+      byteData = codec
+          .encodeMessage(AdSize.getLandscapeInlineAdaptiveBannerAdSize(20))!;
+
+      result = codec.decodeMessage(byteData);
+      expect(result.orientation, Orientation.landscape);
+      expect(result.width, 20);
+      expect(result.maxHeight, null);
+      expect(result.height, 0);
+
+      byteData =
+          codec.encodeMessage(AdSize.getInlineAdaptiveBannerAdSize(20, 50))!;
+
+      result = codec.decodeMessage(byteData);
+      expect(result.orientation, null);
+      expect(result.width, 20);
+      expect(result.maxHeight, 50);
+      expect(result.height, 0);
+    });
+
     test('encode/decode $AnchoredAdaptiveBannerAdSize', () async {
-      final ByteData byteData = codec.encodeMessage(
-          AnchoredAdaptiveBannerAdSize(Orientation.landscape,
+      final ByteData byteDataPortrait = codec.encodeMessage(
+          AnchoredAdaptiveBannerAdSize(Orientation.portrait,
               width: 23, height: 34))!;
 
+      final AnchoredAdaptiveBannerAdSize resultPortrait =
+          codec.decodeMessage(byteDataPortrait);
+      expect(resultPortrait.orientation, Orientation.portrait);
+      expect(resultPortrait.width, 23);
+      expect(resultPortrait.height, -1);
+
+      final ByteData byteDataLandscape = codec.encodeMessage(
+          AnchoredAdaptiveBannerAdSize(Orientation.landscape,
+              width: 34, height: 23))!;
+
+      final AnchoredAdaptiveBannerAdSize resultLandscape =
+          codec.decodeMessage(byteDataLandscape);
+      expect(resultLandscape.orientation, Orientation.landscape);
+      expect(resultLandscape.width, 34);
+      expect(resultLandscape.height, -1);
+
+      final ByteData byteData = codec.encodeMessage(
+          AnchoredAdaptiveBannerAdSize(null, width: 45, height: 34))!;
+
       final AnchoredAdaptiveBannerAdSize result = codec.decodeMessage(byteData);
-      expect(result.orientation, Orientation.landscape);
-      expect(result.width, 23);
-      expect(result.height, 34);
+      expect(result.orientation, null);
+      expect(result.width, 45);
+      expect(result.height, -1);
     });
 
     test('encode/decode $SmartBannerAdSize', () async {
@@ -1254,8 +1472,29 @@ void main() {
       );
     });
 
-    test('encode/decode $AdManagerAdRequest', () async {
-      final ByteData byteData = codec.encodeMessage(AdManagerAdRequest(
+    test('encode/decode $FluidAdSize', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      final ByteData byteData = codec.encodeMessage(FluidAdSize())!;
+
+      final FluidAdSize result = codec.decodeMessage(byteData);
+      expect(result.width, -3);
+      expect(result.height, -3);
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final WriteBuffer expectedBuffer = WriteBuffer();
+      expectedBuffer.putUint8(130);
+
+      final WriteBuffer actualBuffer = WriteBuffer();
+      codec.writeAdSize(actualBuffer, FluidAdSize());
+      expect(
+        expectedBuffer.done().buffer.asInt8List(),
+        actualBuffer.done().buffer.asInt8List(),
+      );
+    });
+
+    test('encode/decode AdManagerAdRequest Android', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final AdManagerAdRequest request = AdManagerAdRequest(
         keywords: <String>['who'],
         contentUrl: 'dat',
         customTargeting: <String, String>{'boy': 'who'},
@@ -1263,20 +1502,51 @@ void main() {
           'him': <String>['is']
         },
         nonPersonalizedAds: true,
-      ))!;
+        neighboringContentUrls: <String>['url1.com', 'url2.com'],
+        httpTimeoutMillis: 5000,
+        publisherProvidedId: 'test-pub-id',
+        location:
+            LocationParams(accuracy: 1.1, longitude: 25, latitude: 38, time: 1),
+      );
+      final ByteData byteData = codec.encodeMessage(request)!;
 
       expect(
         codec.decodeMessage(byteData),
-        AdManagerAdRequest(
-          keywords: <String>['who'],
-          contentUrl: 'dat',
-          customTargeting: <String, String>{'boy': 'who'},
-          customTargetingLists: <String, List<String>>{
-            'him': <String>['is'],
-          },
-          nonPersonalizedAds: true,
-        ),
+        request,
       );
+    });
+
+    test('encode/decode AdManagerAdRequest iOS', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
+      final AdManagerAdRequest request = AdManagerAdRequest(
+        keywords: <String>['who'],
+        contentUrl: 'dat',
+        customTargeting: <String, String>{'boy': 'who'},
+        customTargetingLists: <String, List<String>>{
+          'him': <String>['is']
+        },
+        nonPersonalizedAds: true,
+        neighboringContentUrls: <String>['url1.com', 'url2.com'],
+        httpTimeoutMillis: 5000,
+        publisherProvidedId: 'test-pub-id',
+        location:
+            LocationParams(accuracy: 1.1, longitude: 25, latitude: 38, time: 1),
+      );
+
+      final ByteData byteData = codec.encodeMessage(request)!;
+      AdManagerAdRequest decoded = codec.decodeMessage(byteData);
+      expect(decoded.httpTimeoutMillis, null);
+      expect(decoded.neighboringContentUrls, request.neighboringContentUrls);
+      expect(decoded.contentUrl, request.contentUrl);
+      expect(decoded.nonPersonalizedAds, request.nonPersonalizedAds);
+      expect(decoded.keywords, request.keywords);
+      expect(decoded.publisherProvidedId, request.publisherProvidedId);
+      expect(decoded.customTargeting, request.customTargeting);
+      expect(decoded.customTargetingLists, request.customTargetingLists);
+      expect(decoded.location!.accuracy, 1.1);
+      expect(decoded.location!.longitude, 25);
+      expect(decoded.location!.latitude, 38);
     });
   });
 }

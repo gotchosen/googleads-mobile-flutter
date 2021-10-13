@@ -19,6 +19,36 @@
 @property NSMutableDictionary<NSString *, id<FLTNativeAdFactory>> *nativeAdFactories;
 @end
 
+/// Initialization handler for GMASDK. Invokes result at most once.
+@interface FLTInitializationHandler : NSObject
+- (instancetype)initWithResult:(FlutterResult)result;
+- (void)handleInitializationComplete:(GADInitializationStatus *_Nonnull)status;
+@end
+
+@implementation FLTInitializationHandler {
+  FlutterResult _result;
+  BOOL _isInitializationCompleted;
+}
+
+- (instancetype)initWithResult:(FlutterResult)result {
+  self = [super init];
+  if (self) {
+    _isInitializationCompleted = false;
+    _result = result;
+  }
+  return self;
+}
+
+- (void)handleInitializationComplete:(GADInitializationStatus *_Nonnull)status {
+  if (_isInitializationCompleted) {
+    return;
+  }
+  _result([[FLTInitializationStatus alloc] initWithStatus:status]);
+  _isInitializationCompleted = true;
+}
+
+@end
+
 @implementation FLTGoogleMobileAdsPlugin {
   NSMutableDictionary<NSString *, id<FLTNativeAdFactory>> *_nativeAdFactories;
   FLTAdInstanceManager *_manager;
@@ -97,9 +127,10 @@
       UIApplication.sharedApplication.delegate.window.rootViewController;
 
   if ([call.method isEqualToString:@"MobileAds#initialize"]) {
+    FLTInitializationHandler *handler = [[FLTInitializationHandler alloc] initWithResult:result];
     [[GADMobileAds sharedInstance]
         startWithCompletionHandler:^(GADInitializationStatus *_Nonnull status) {
-          result([[FLTInitializationStatus alloc] initWithStatus:status]);
+          [handler handleInitializationComplete:status];
         }];
   } else if ([call.method isEqualToString:@"_init"]) {
     [_manager disposeAllAds];
@@ -109,6 +140,20 @@
     NSNumber *isEnabled = call.arguments[@"isEnabled"];
     [requestConfig setSameAppKeyEnabled:isEnabled.boolValue];
     result(nil);
+  } else if ([call.method isEqualToString:@"MobileAds#setAppMuted"]) {
+    GADMobileAds.sharedInstance.applicationMuted = [call.arguments[@"muted"] boolValue];
+    result(nil);
+  } else if ([call.method isEqualToString:@"MobileAds#setAppVolume"]) {
+    GADMobileAds.sharedInstance.applicationVolume = [call.arguments[@"volume"] floatValue];
+    result(nil);
+  } else if ([call.method isEqualToString:@"MobileAds#disableSDKCrashReporting"]) {
+    [GADMobileAds.sharedInstance disableSDKCrashReporting];
+    result(nil);
+  } else if ([call.method isEqualToString:@"MobileAds#disableMediationInitialization"]) {
+    [GADMobileAds.sharedInstance disableMediationInitialization];
+    result(nil);
+  } else if ([call.method isEqualToString:@"MobileAds#getVersionString"]) {
+    result([GADMobileAds.sharedInstance sdkVersion]);
   } else if ([call.method isEqualToString:@"MobileAds#updateRequestConfiguration"]) {
     NSString *maxAdContentRating = call.arguments[@"maxAdContentRating"];
     NSNumber *tagForChildDirectedTreatment = call.arguments[@"tagForChildDirectedTreatment"];
@@ -170,6 +215,14 @@
                                                              adId:call.arguments[@"adId"]];
     [_manager loadAd:ad];
     result(nil);
+  } else if ([call.method isEqualToString:@"loadFluidAd"]) {
+    FLTFluidGAMBannerAd *ad =
+        [[FLTFluidGAMBannerAd alloc] initWithAdUnitId:call.arguments[@"adUnitId"]
+                                              request:call.arguments[@"request"]
+                                   rootViewController:rootController
+                                                 adId:call.arguments[@"adId"]];
+    [_manager loadAd:ad];
+    result(nil);
   } else if ([call.method isEqualToString:@"loadNativeAd"]) {
     NSString *factoryId = call.arguments[@"factoryId"];
     id<FLTNativeAdFactory> factory = _nativeAdFactories[factoryId];
@@ -193,7 +246,8 @@
                                             nativeAdFactory:(id)factory
                                               customOptions:call.arguments[@"customOptions"]
                                          rootViewController:rootController
-                                                       adId:call.arguments[@"adId"]];
+                                                       adId:call.arguments[@"adId"]
+                                            nativeAdOptions:call.arguments[@"nativeAdOptions"]];
     [_manager loadAd:ad];
     result(nil);
   } else if ([call.method isEqualToString:@"loadInterstitialAd"]) {
@@ -232,6 +286,25 @@
                                            adId:call.arguments[@"adId"]];
     [_manager loadAd:ad];
     result(nil);
+  } else if ([call.method isEqualToString:@"loadAppOpenAd"]) {
+    FLTAdRequest *request;
+    if (![call.arguments[@"request"] isEqual:[NSNull null]]) {
+      request = call.arguments[@"request"];
+    } else if (![call.arguments[@"adManagerRequest"] isEqual:[NSNull null]]) {
+      request = call.arguments[@"adManagerRequest"];
+    } else {
+      result([FlutterError errorWithCode:@"InvalidRequest"
+                                 message:@"A null or invalid ad request was provided."
+                                 details:nil]);
+      return;
+    }
+    FLTAppOpenAd *ad = [[FLTAppOpenAd alloc] initWithAdUnitId:call.arguments[@"adUnitId"]
+                                                      request:request
+                                           rootViewController:rootController
+                                                  orientation:call.arguments[@"orientation"]
+                                                         adId:call.arguments[@"adId"]];
+    [_manager loadAd:ad];
+    result(nil);
   } else if ([call.method isEqualToString:@"disposeAd"]) {
     [_manager dispose:call.arguments[@"adId"]];
     result(nil);
@@ -248,6 +321,10 @@
     } else {
       result(nil);
     }
+  } else if ([call.method isEqualToString:@"getAdSize"]) {
+    FLTBannerAd *ad = (FLTBannerAd *)[_manager adFor:call.arguments[@"adId"]];
+    result([ad getAdSize]);
+    ;
   } else {
     result(FlutterMethodNotImplemented);
   }

@@ -18,7 +18,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-
+import 'inline_adaptive_example.dart';
+import 'fluid_example.dart';
 import 'reusable_inline_example.dart';
 
 void main() {
@@ -69,6 +70,7 @@ class _MyAppState extends State<MyApp> {
             print('$ad loaded');
             _interstitialAd = ad;
             _numInterstitialLoadAttempts = 0;
+            _interstitialAd!.setImmersiveMode(true);
           },
           onAdFailedToLoad: (LoadAdError error) {
             print('InterstitialAd failed to load: $error.');
@@ -87,7 +89,8 @@ class _MyAppState extends State<MyApp> {
       return;
     }
     _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (InterstitialAd ad) => print('ad onAdShowedFullScreenContent.'),
+      onAdShowedFullScreenContent: (InterstitialAd ad) =>
+          print('ad onAdShowedFullScreenContent.'),
       onAdDismissedFullScreenContent: (InterstitialAd ad) {
         print('$ad onAdDismissedFullScreenContent.');
         ad.dispose();
@@ -130,7 +133,8 @@ class _MyAppState extends State<MyApp> {
       return;
     }
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdShowedFullScreenContent: (RewardedAd ad) => print('ad onAdShowedFullScreenContent.'),
+      onAdShowedFullScreenContent: (RewardedAd ad) =>
+          print('ad onAdShowedFullScreenContent.'),
       onAdDismissedFullScreenContent: (RewardedAd ad) {
         print('$ad onAdDismissedFullScreenContent.');
         ad.dispose();
@@ -143,6 +147,7 @@ class _MyAppState extends State<MyApp> {
       },
     );
 
+    _rewardedAd!.setImmersiveMode(true);
     _rewardedAd!.show(onUserEarnedReward: (RewardedAd ad, RewardItem reward) {
       print('$ad with reward $RewardItem(${reward.amount}, ${reward.type}');
     });
@@ -150,10 +155,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _createAnchoredBanner(BuildContext context) async {
-    final AnchoredAdaptiveBannerAdSize? size = await AdSize.getAnchoredAdaptiveBannerAdSize(
-      Orientation.portrait,
-      MediaQuery.of(context).size.width.truncate(),
-    );
+    final AnchoredAdaptiveBannerAdSize? size =
+        await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+            MediaQuery.of(context).size.width.truncate());
 
     if (size == null) {
       print('Unable to get height of anchored banner.');
@@ -163,8 +167,9 @@ class _MyAppState extends State<MyApp> {
     final BannerAd banner = BannerAd(
       size: size,
       request: request,
-      adUnitId:
-          Platform.isAndroid ? 'ca-app-pub-3940256099942544/6300978111' : 'ca-app-pub-3940256099942544/2934735716',
+      adUnitId: Platform.isAndroid
+          ? 'ca-app-pub-3940256099942544/6300978111'
+          : 'ca-app-pub-3940256099942544/2934735716',
       listener: BannerAdListener(
         onAdLoaded: (Ad ad) {
           print('$BannerAd loaded.');
@@ -212,18 +217,39 @@ class _MyAppState extends State<MyApp> {
                     case 'RewardedAd':
                       _showRewardedAd();
                       break;
+                    case 'Fluid':
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => FluidExample()),
+                      );
+                      break;
+                    case 'Inline adaptive':
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => InlineAdaptiveExample()),
+                      );
+                      break;
                     default:
                       throw AssertionError('unexpected button: $result');
                   }
                 },
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                   PopupMenuItem<String>(
-                    value: '$InterstitialAd',
-                    child: Text('$InterstitialAd'),
+                    value: 'InterstitialAd',
+                    child: Text('InterstitialAd'),
                   ),
                   PopupMenuItem<String>(
-                    value: '$RewardedAd',
-                    child: Text('$RewardedAd'),
+                    value: 'RewardedAd',
+                    child: Text('RewardedAd'),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'Fluid',
+                    child: Text('Fluid'),
+                  ),
+                  PopupMenuItem<String>(
+                    value: 'Inline adaptive',
+                    child: Text('Inline adaptive'),
                   ),
                 ],
               ),
