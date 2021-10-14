@@ -660,27 +660,11 @@ class _AdWidgetState extends State<AdWidget> {
       ]);
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return PlatformViewLink(
+      return AndroidView(
         viewType: '${instanceManager.channel.name}/ad_widget',
-        surfaceFactory:
-            (BuildContext context, PlatformViewController controller) {
-          return AndroidViewSurface(
-            controller: controller as AndroidViewController,
-            gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
-            hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-          );
-        },
-        onCreatePlatformView: (PlatformViewCreationParams params) {
-          return PlatformViewsService.initSurfaceAndroidView(
-            id: params.id,
-            viewType: '${instanceManager.channel.name}/ad_widget',
-            layoutDirection: TextDirection.ltr,
-            creationParams: instanceManager.adIdFor(widget.ad),
-            creationParamsCodec: StandardMessageCodec(),
-          )
-            ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
-            ..create();
-        },
+        creationParams: instanceManager.adIdFor(widget.ad),
+        creationParamsCodec: const StandardMessageCodec(),
+        clipBehavior: Clip.none,
       );
     }
 
@@ -768,27 +752,11 @@ class _FluidAdWidgetState extends State<FluidAdWidget> {
     Widget platformView;
     double height;
     if (defaultTargetPlatform == TargetPlatform.android) {
-      platformView = PlatformViewLink(
+      platformView = AndroidView(
         viewType: '${instanceManager.channel.name}/ad_widget',
-        surfaceFactory:
-            (BuildContext context, PlatformViewController controller) {
-          return AndroidViewSurface(
-            controller: controller as AndroidViewController,
-            gestureRecognizers: const <Factory<OneSequenceGestureRecognizer>>{},
-            hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-          );
-        },
-        onCreatePlatformView: (PlatformViewCreationParams params) {
-          return PlatformViewsService.initSurfaceAndroidView(
-            id: params.id,
-            viewType: '${instanceManager.channel.name}/ad_widget',
-            layoutDirection: TextDirection.ltr,
-            creationParams: instanceManager.adIdFor(widget.ad),
-            creationParamsCodec: StandardMessageCodec(),
-          )
-            ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
-            ..create();
-        },
+        creationParams: instanceManager.adIdFor(widget.ad),
+        creationParamsCodec: const StandardMessageCodec(),
+        clipBehavior: Clip.none,
       );
       height = _height / MediaQuery.of(context).devicePixelRatio;
     } else {
