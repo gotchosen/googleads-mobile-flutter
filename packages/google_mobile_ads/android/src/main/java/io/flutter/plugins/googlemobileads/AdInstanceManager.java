@@ -47,6 +47,7 @@ class AdInstanceManager {
   AdInstanceManager(@NonNull MethodChannel channel) {
     this.channel = channel;
     this.ads = new HashMap<>();
+  }
 
   void setActivity(@Nullable Activity activity) {
     this.activity = activity;
@@ -224,12 +225,12 @@ class AdInstanceManager {
   /** Invoke the method channel using the UI thread. Otherwise the message gets silently dropped. */
   private void invokeOnAdEvent(final Map<Object, Object> arguments) {
     new Handler(Looper.getMainLooper())
-        .post(
-            new Runnable() {
-              @Override
-              public void run() {
-                channel.invokeMethod("onAdEvent", arguments);
-              }
-            });
+            .post(
+                    new Runnable() {
+                      @Override
+                      public void run() {
+                        channel.invokeMethod("onAdEvent", arguments);
+                      }
+                    });
   }
 }

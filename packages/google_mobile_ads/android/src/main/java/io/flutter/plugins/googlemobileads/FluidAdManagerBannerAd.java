@@ -23,6 +23,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import com.google.android.gms.ads.AdSize;
+
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.platform.PlatformView;
 import java.util.Collections;
 
@@ -36,44 +38,46 @@ final class FluidAdManagerBannerAd extends FlutterAdManagerBannerAd {
   private int height = -1;
 
   FluidAdManagerBannerAd(
-      int adId,
-      @NonNull AdInstanceManager manager,
-      @NonNull String adUnitId,
-      @NonNull FlutterAdManagerAdRequest request,
-      @NonNull BannerAdCreator bannerAdCreator) {
+          int adId,
+          @NonNull AdInstanceManager manager,
+          @NonNull FlutterPlugin.FlutterPluginBinding pluginBinding,
+          @NonNull String adUnitId,
+          @NonNull FlutterAdManagerAdRequest request,
+          @NonNull BannerAdCreator bannerAdCreator) {
     super(
-        adId,
-        manager,
-        adUnitId,
-        Collections.singletonList(new FlutterAdSize(AdSize.FLUID)),
-        request,
-        bannerAdCreator);
+            adId,
+            manager,
+            pluginBinding,
+            adUnitId,
+            Collections.singletonList(new FlutterAdSize(AdSize.FLUID)),
+            request,
+            bannerAdCreator);
   }
 
   @Override
   public void onAdLoaded() {
     if (adView != null) {
       adView.addOnLayoutChangeListener(
-          new OnLayoutChangeListener() {
-            @Override
-            public void onLayoutChange(
-                View v,
-                int left,
-                int top,
-                int right,
-                int bottom,
-                int oldLeft,
-                int oldTop,
-                int oldRight,
-                int oldBottom) {
-              // Forward the new height to its container.
-              int newHeight = v.getMeasuredHeight();
-              if (newHeight != height) {
-                manager.onFluidAdHeightChanged(adId, newHeight);
-              }
-              height = newHeight;
-            }
-          });
+              new OnLayoutChangeListener() {
+                @Override
+                public void onLayoutChange(
+                        View v,
+                        int left,
+                        int top,
+                        int right,
+                        int bottom,
+                        int oldLeft,
+                        int oldTop,
+                        int oldRight,
+                        int oldBottom) {
+                  // Forward the new height to its container.
+                  int newHeight = v.getMeasuredHeight();
+                  if (newHeight != height) {
+                    manager.onFluidAdHeightChanged(adId, newHeight);
+                  }
+                  height = newHeight;
+                }
+              });
       manager.onAdLoaded(adId, adView.getResponseInfo());
     }
   }

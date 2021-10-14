@@ -34,6 +34,8 @@ import com.google.android.gms.ads.ResponseInfo;
 import com.google.android.gms.ads.admanager.AdManagerAdRequest;
 import com.google.android.gms.ads.admanager.AdManagerAdView;
 import com.google.android.gms.ads.admanager.AppEventListener;
+
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.platform.PlatformView;
 import io.flutter.plugins.googlemobileads.FlutterAd.FlutterLoadAdError;
@@ -51,6 +53,7 @@ import org.robolectric.RobolectricTestRunner;
 public class FlutterAdManagerBannerAdTest {
 
   private AdInstanceManager mockManager;
+  private FlutterPlugin.FlutterPluginBinding mockFlutterPluginBinding;
   private AdManagerAdRequest mockAdRequest;
   private AdSize adSize;
   private AdManagerAdView mockAdView;
@@ -62,6 +65,7 @@ public class FlutterAdManagerBannerAdTest {
   public void setup() {
     // Setup mock dependencies for flutterBannerAd.
     mockManager = spy(new AdInstanceManager(mock(MethodChannel.class)));
+    mockFlutterPluginBinding = mock(FlutterPlugin.FlutterPluginBinding.class);
     doReturn(mock(Activity.class)).when(mockManager).getActivity();
     FlutterAdManagerAdRequest mockFlutterAdRequest = mock(FlutterAdManagerAdRequest.class);
     mockAdRequest = mock(AdManagerAdRequest.class);
@@ -76,7 +80,7 @@ public class FlutterAdManagerBannerAdTest {
     doReturn(mockAdView).when(bannerAdCreator).createAdManagerAdView();
     flutterBannerAd =
         new FlutterAdManagerBannerAd(
-            1, mockManager, "testId", sizes, mockFlutterAdRequest, bannerAdCreator);
+            1, mockManager, mockFlutterPluginBinding, "testId", sizes, mockFlutterAdRequest, bannerAdCreator);
   }
 
   @Test

@@ -366,6 +366,7 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
             new FlutterAdManagerBannerAd(
                 call.<Integer>argument("adId"),
                 instanceManager,
+                pluginBinding,
                 call.<String>argument("adUnitId"),
                 call.<List<FlutterAdSize>>argument("sizes"),
                 call.<FlutterAdManagerAdRequest>argument("request"),
@@ -379,6 +380,7 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
             new FluidAdManagerBannerAd(
                 call.<Integer>argument("adId"),
                 instanceManager,
+                pluginBinding,
                 call.<String>argument("adUnitId"),
                 call.<FlutterAdManagerAdRequest>argument("request"),
                 getBannerAdCreator(appContext));

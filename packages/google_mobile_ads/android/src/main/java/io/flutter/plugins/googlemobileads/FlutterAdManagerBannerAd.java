@@ -26,6 +26,8 @@ import com.google.android.gms.ads.admanager.AdManagerAdRequest;
 import com.google.android.gms.ads.admanager.AdManagerAdView;
 import com.google.android.gms.ads.admanager.AppEventListener;
 import com.google.android.gms.common.internal.Preconditions;
+
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import io.flutter.plugin.platform.PlatformView;
 import java.util.List;
 
@@ -42,6 +44,7 @@ import org.prebid.mobile.ResultCode;
 class FlutterAdManagerBannerAd extends FlutterAd implements FlutterAdLoadedListener {
 
   @NonNull protected final AdInstanceManager manager;
+  @NonNull protected final FlutterPlugin.FlutterPluginBinding pluginBinding;
   @NonNull private final String adUnitId;
   @NonNull private final List<FlutterAdSize> sizes;
   @NonNull private final FlutterAdManagerAdRequest request;
@@ -58,6 +61,7 @@ class FlutterAdManagerBannerAd extends FlutterAd implements FlutterAdLoadedListe
   public FlutterAdManagerBannerAd(
       int adId,
       @NonNull AdInstanceManager manager,
+      @NonNull FlutterPlugin.FlutterPluginBinding pluginBinding,
       @NonNull String adUnitId,
       @NonNull List<FlutterAdSize> sizes,
       @NonNull FlutterAdManagerAdRequest request,
@@ -68,6 +72,7 @@ class FlutterAdManagerBannerAd extends FlutterAd implements FlutterAdLoadedListe
     Preconditions.checkNotNull(sizes);
     Preconditions.checkNotNull(request);
     this.manager = manager;
+    this.pluginBinding = pluginBinding;
     this.adUnitId = adUnitId;
     this.sizes = sizes;
     this.request = request;
@@ -133,7 +138,7 @@ class FlutterAdManagerBannerAd extends FlutterAd implements FlutterAdLoadedListe
     Host host = Host.CUSTOM;
     host.setHostUrl("https://ib.adnxs.com/openrtb2/prebid");
 //    host.setHostUrl("https://prebid.adnxs.com/pbs/v1/openrtb2/auction");
-    PrebidMobile.setApplicationContext(manager.activity);
+    PrebidMobile.setApplicationContext(pluginBinding.getApplicationContext());
     PrebidMobile.setPrebidServerHost(host);
     PrebidMobile.setPrebidServerAccountId("11011");
 //    PrebidMobile.setPrebidServerAccountId("bfa84af2-bd16-4d35-96ad-31c6bb888df0");
