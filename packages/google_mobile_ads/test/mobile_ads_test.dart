@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:google_mobile_ads/src/ad_inspector_containers.dart';
 import 'package:google_mobile_ads/src/ad_instance_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -46,8 +50,24 @@ void main() {
               ),
             });
           case '_init':
-            return null;
           case 'MobileAds#setSameAppKeyEnabled':
+          case 'MobileAds#setAppMuted':
+          case 'MobileAds#setAppVolume':
+          case 'MobileAds#disableSDKCrashReporting':
+          case 'MobileAds#disableMediationInitialization':
+            return null;
+          case 'MobileAds#getVersionString':
+            return Future<String>.value('Test-SDK-Version');
+          case 'MobileAds#updateRequestConfiguration':
+            return null;
+          case 'MobileAds#getRequestConfiguration':
+            return RequestConfiguration(
+              maxAdContentRating: MaxAdContentRating.ma,
+              tagForChildDirectedTreatment: TagForChildDirectedTreatment.yes,
+              tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
+              testDeviceIds: <String>['test-device-id'],
+            );
+          case 'AdSize#getAnchoredAdaptiveBannerAdSize':
             return null;
           default:
             assert(false);
@@ -132,6 +152,43 @@ void main() {
       expect(status.latency, 0);
     });
 
+    test('$MobileAds.openAdInspector success', () async {
+      MethodChannel(
+        'plugins.flutter.io/google_mobile_ads',
+        StandardMethodCodec(AdMessageCodec()),
+      ).setMockMethodCallHandler((MethodCall methodCall) async {
+        return null;
+      });
+
+      Completer<AdInspectorError?> completer = Completer<AdInspectorError?>();
+      MobileAds.instance.openAdInspector((error) {
+        completer.complete(error);
+      });
+
+      AdInspectorError? error = await completer.future;
+      expect(error, null);
+    });
+
+    test('$MobileAds.openAdInspector error', () async {
+      MethodChannel(
+        'plugins.flutter.io/google_mobile_ads',
+        StandardMethodCodec(AdMessageCodec()),
+      ).setMockMethodCallHandler((MethodCall methodCall) async {
+        throw PlatformException(
+            code: '1', details: 'details', message: 'message');
+      });
+
+      Completer<AdInspectorError?> completer = Completer<AdInspectorError?>();
+      MobileAds.instance.openAdInspector((error) {
+        completer.complete(error);
+      });
+
+      AdInspectorError? error = await completer.future;
+      expect(error!.message, 'message');
+      expect(error.code, '1');
+      expect(error.domain, 'details');
+    });
+
     test('$MobileAds.setSameAppKeyEnabled', () async {
       await MobileAds.instance.setSameAppKeyEnabled(true);
 
@@ -148,6 +205,326 @@ void main() {
         isMethodCall('MobileAds#setSameAppKeyEnabled',
             arguments: {'isEnabled': false})
       ]);
+    });
+
+    test('encode/decode empty native ad options', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      ByteData byteData = codec.encodeMessage(NativeAdOptions())!;
+
+      NativeAdOptions result = codec.decodeMessage(byteData);
+      expect(result.mediaAspectRatio, null);
+      expect(result.adChoicesPlacement, null);
+      expect(result.requestCustomMuteThisAd, null);
+      expect(result.shouldRequestMultipleImages, null);
+      expect(result.shouldReturnUrlsForImageAssets, null);
+      expect(result.videoOptions, null);
+
+      byteData =
+          codec.encodeMessage(NativeAdOptions(videoOptions: VideoOptions()))!;
+      result = codec.decodeMessage(byteData);
+      expect(result.mediaAspectRatio, null);
+      expect(result.adChoicesPlacement, null);
+      expect(result.requestCustomMuteThisAd, null);
+      expect(result.shouldRequestMultipleImages, null);
+      expect(result.shouldReturnUrlsForImageAssets, null);
+      expect(result.videoOptions!.clickToExpandRequested, null);
+      expect(result.videoOptions!.customControlsRequested, null);
+      expect(result.videoOptions!.startMuted, null);
+    });
+
+    test('encode/decode native ad options', () {
+      NativeAdOptions nativeAdOptions = NativeAdOptions(
+          adChoicesPlacement: AdChoicesPlacement.topRightCorner,
+          mediaAspectRatio: MediaAspectRatio.unknown,
+          videoOptions: VideoOptions(
+            clickToExpandRequested: false,
+            customControlsRequested: false,
+            startMuted: false,
+          ),
+          requestCustomMuteThisAd: false,
+          shouldRequestMultipleImages: false,
+          shouldReturnUrlsForImageAssets: false);
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      ByteData byteData = codec.encodeMessage(nativeAdOptions)!;
+
+      NativeAdOptions result = codec.decodeMessage(byteData);
+      expect(result.mediaAspectRatio, MediaAspectRatio.unknown);
+      expect(result.adChoicesPlacement, AdChoicesPlacement.topRightCorner);
+      expect(result.requestCustomMuteThisAd, false);
+      expect(result.shouldRequestMultipleImages, false);
+      expect(result.shouldReturnUrlsForImageAssets, false);
+      expect(result.videoOptions!.startMuted, false);
+      expect(result.videoOptions!.customControlsRequested, false);
+      expect(result.videoOptions!.clickToExpandRequested, false);
+
+      nativeAdOptions = NativeAdOptions(
+          adChoicesPlacement: AdChoicesPlacement.bottomLeftCorner,
+          mediaAspectRatio: MediaAspectRatio.landscape,
+          videoOptions: VideoOptions(
+            clickToExpandRequested: true,
+            customControlsRequested: true,
+            startMuted: true,
+          ),
+          requestCustomMuteThisAd: true,
+          shouldRequestMultipleImages: true,
+          shouldReturnUrlsForImageAssets: true);
+
+      byteData = codec.encodeMessage(nativeAdOptions)!;
+      result = codec.decodeMessage(byteData);
+
+      expect(result.mediaAspectRatio, MediaAspectRatio.landscape);
+      expect(result.adChoicesPlacement, AdChoicesPlacement.bottomLeftCorner);
+      expect(result.requestCustomMuteThisAd, true);
+      expect(result.shouldRequestMultipleImages, true);
+      expect(result.shouldReturnUrlsForImageAssets, true);
+      expect(result.videoOptions!.startMuted, true);
+      expect(result.videoOptions!.customControlsRequested, true);
+      expect(result.videoOptions!.clickToExpandRequested, true);
+    });
+
+    test('$MobileAds.setAppMuted', () async {
+      await MobileAds.instance.setAppMuted(true);
+
+      expect(log, <Matcher>[
+        isMethodCall('MobileAds#setAppMuted', arguments: {'muted': true})
+      ]);
+
+      await MobileAds.instance.setAppMuted(false);
+
+      expect(log, <Matcher>[
+        isMethodCall('MobileAds#setAppMuted', arguments: {'muted': true}),
+        isMethodCall('MobileAds#setAppMuted', arguments: {'muted': false})
+      ]);
+    });
+
+    test('$MobileAds.setAppVolume', () async {
+      await MobileAds.instance.setAppVolume(1.0);
+
+      expect(log, <Matcher>[
+        isMethodCall('MobileAds#setAppVolume', arguments: {'volume': 1.0})
+      ]);
+    });
+
+    test('$MobileAds.disableSDKCrashReporting', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      await MobileAds.instance.disableSDKCrashReporting();
+
+      expect(log, <Matcher>[
+        isMethodCall('MobileAds#disableSDKCrashReporting', arguments: null)
+      ]);
+    });
+
+    test('$MobileAds.disableMediationInitialization', () async {
+      await MobileAds.instance.disableMediationInitialization();
+
+      expect(log, <Matcher>[
+        isMethodCall('MobileAds#disableMediationInitialization',
+            arguments: null)
+      ]);
+    });
+
+    test('$MobileAds.getVersionString', () async {
+      await MobileAds.instance.getVersionString();
+
+      expect(log, <Matcher>[
+        isMethodCall('MobileAds#getVersionString', arguments: null)
+      ]);
+    });
+
+    test('$AdSize.getAnchoredAdaptiveBannerAdSize', () async {
+      await AdSize.getAnchoredAdaptiveBannerAdSize(Orientation.portrait, 23);
+
+      expect(log, <Matcher>[
+        isMethodCall('AdSize#getAnchoredAdaptiveBannerAdSize',
+            arguments: {'orientation': 'portrait', 'width': 23})
+      ]);
+
+      await AdSize.getAnchoredAdaptiveBannerAdSize(Orientation.landscape, 34);
+
+      expect(log, <Matcher>[
+        isMethodCall('AdSize#getAnchoredAdaptiveBannerAdSize',
+            arguments: {'orientation': 'portrait', 'width': 23}),
+        isMethodCall('AdSize#getAnchoredAdaptiveBannerAdSize',
+            arguments: {'orientation': 'landscape', 'width': 34})
+      ]);
+
+      await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(45);
+
+      expect(log, <Matcher>[
+        isMethodCall('AdSize#getAnchoredAdaptiveBannerAdSize',
+            arguments: {'orientation': 'portrait', 'width': 23}),
+        isMethodCall('AdSize#getAnchoredAdaptiveBannerAdSize',
+            arguments: {'orientation': 'landscape', 'width': 34}),
+        isMethodCall('AdSize#getAnchoredAdaptiveBannerAdSize',
+            arguments: {'width': 45})
+      ]);
+    });
+
+    test('encode/decode $MobileAds.getRequestConfiguration', () async {
+      RequestConfiguration requestConfig =
+          await MobileAds.instance.getRequestConfiguration();
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      ByteData byteData = codec.encodeMessage(requestConfig)!;
+      RequestConfiguration result = codec.decodeMessage(byteData);
+
+      expect(result.maxAdContentRating, MaxAdContentRating.ma);
+      expect(result.tagForChildDirectedTreatment,
+          TagForChildDirectedTreatment.yes);
+      expect(result.tagForUnderAgeOfConsent, TagForUnderAgeOfConsent.no);
+      expect(result.testDeviceIds, ['test-device-id']);
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      byteData = codec.encodeMessage(requestConfig)!;
+      result = codec.decodeMessage(byteData);
+
+      expect(result.maxAdContentRating, MaxAdContentRating.ma);
+      expect(result.tagForChildDirectedTreatment,
+          TagForChildDirectedTreatment.yes);
+      expect(result.tagForUnderAgeOfConsent, TagForUnderAgeOfConsent.no);
+      expect(result.testDeviceIds, ['test-device-id']);
+    });
+
+    test('$MobileAds.RequestConfiguration', () async {
+      RequestConfiguration requestConfiguration = RequestConfiguration(
+        maxAdContentRating: MaxAdContentRating.ma,
+        tagForChildDirectedTreatment: TagForChildDirectedTreatment.yes,
+        tagForUnderAgeOfConsent: TagForUnderAgeOfConsent.no,
+        testDeviceIds: <String>['test-device-id'],
+      );
+
+      await MobileAds.instance.updateRequestConfiguration(requestConfiguration);
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      RequestConfiguration result =
+          await MobileAds.instance.getRequestConfiguration();
+      expect(result.maxAdContentRating, MaxAdContentRating.ma);
+      expect(result.tagForChildDirectedTreatment,
+          TagForChildDirectedTreatment.yes);
+      expect(result.tagForUnderAgeOfConsent, TagForUnderAgeOfConsent.no);
+      expect(result.testDeviceIds, <String>['test-device-id']);
+      expect(log, <Matcher>[
+        isMethodCall('MobileAds#updateRequestConfiguration', arguments: {
+          'maxAdContentRating': MaxAdContentRating.ma,
+          'tagForChildDirectedTreatment': TagForChildDirectedTreatment.yes,
+          'testDeviceIds': <String>['test-device-id'],
+          'tagForUnderAgeOfConsent': TagForUnderAgeOfConsent.no,
+        }),
+        isMethodCall('MobileAds#getRequestConfiguration', arguments: null)
+      ]);
+
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      result = await MobileAds.instance.getRequestConfiguration();
+      expect(result.maxAdContentRating, MaxAdContentRating.ma);
+      expect(result.tagForChildDirectedTreatment,
+          TagForChildDirectedTreatment.yes);
+      expect(result.tagForUnderAgeOfConsent, TagForUnderAgeOfConsent.no);
+      expect(result.testDeviceIds, <String>['test-device-id']);
+      expect(log, <Matcher>[
+        isMethodCall('MobileAds#updateRequestConfiguration', arguments: {
+          'maxAdContentRating': MaxAdContentRating.ma,
+          'tagForChildDirectedTreatment': TagForChildDirectedTreatment.yes,
+          'testDeviceIds': <String>['test-device-id'],
+          'tagForUnderAgeOfConsent': TagForUnderAgeOfConsent.no,
+        }),
+        isMethodCall('MobileAds#getRequestConfiguration', arguments: null),
+        isMethodCall('MobileAds#getRequestConfiguration', arguments: null)
+      ]);
+    });
+
+    test('encode/decode native template font style', () {
+      NativeTemplateFontStyle.values.forEach((fontStyle) {
+        final byteData = codec.encodeMessage(fontStyle)!;
+        final result = codec.decodeMessage(byteData);
+        expect(result, fontStyle);
+      });
+    });
+
+    test('encode/decode native template type', () {
+      TemplateType.values.forEach((templateType) {
+        final byteData = codec.encodeMessage(templateType)!;
+        final result = codec.decodeMessage(byteData);
+        expect(result, templateType);
+      });
+    });
+
+    test('encode/decode empty native text style', () {
+      final textStyle = NativeTemplateTextStyle();
+      final byteData = codec.encodeMessage(textStyle);
+      final result = codec.decodeMessage(byteData);
+      expect(result, textStyle);
+    });
+
+    test('encode/decode non-empty native text style', () {
+      final textStyle = NativeTemplateTextStyle(
+        textColor: Colors.red,
+        backgroundColor: Colors.blue.withAlpha(50),
+        style: NativeTemplateFontStyle.normal,
+        size: 20,
+      );
+      final byteData = codec.encodeMessage(textStyle);
+      final result = codec.decodeMessage(byteData);
+      expect(result, textStyle);
+    });
+
+    test('encode/decode empty native template style', () {
+      final templateStyle =
+          NativeTemplateStyle(templateType: TemplateType.medium);
+      final byteData = codec.encodeMessage(templateStyle);
+      final result = codec.decodeMessage(byteData);
+      expect(result, templateStyle);
+    });
+
+    test('encode/decode non-empty native template style, ios', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      final templateStyle = NativeTemplateStyle(
+          templateType: TemplateType.medium,
+          callToActionTextStyle: NativeTemplateTextStyle(),
+          primaryTextStyle: NativeTemplateTextStyle(
+            textColor: Colors.blue,
+          ),
+          secondaryTextStyle: NativeTemplateTextStyle(
+            backgroundColor: Colors.green,
+            style: NativeTemplateFontStyle.italic,
+          ),
+          tertiaryTextStyle: NativeTemplateTextStyle(
+            size: 15,
+          ),
+          mainBackgroundColor: Colors.cyan,
+          cornerRadius: 12);
+      final byteData = codec.encodeMessage(templateStyle);
+      final result = codec.decodeMessage(byteData);
+      expect(result, templateStyle);
+    });
+
+    test('encode/decode non-empty native template style, android', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final templateStyle = NativeTemplateStyle(
+          templateType: TemplateType.medium,
+          callToActionTextStyle: NativeTemplateTextStyle(),
+          primaryTextStyle: NativeTemplateTextStyle(
+            textColor: Colors.blue,
+          ),
+          secondaryTextStyle: NativeTemplateTextStyle(
+            backgroundColor: Colors.green,
+            style: NativeTemplateFontStyle.italic,
+          ),
+          tertiaryTextStyle: NativeTemplateTextStyle(
+            size: 15,
+          ),
+          mainBackgroundColor: Color.fromARGB(1, 2, 3, 4),
+          cornerRadius: 12);
+      final byteData = codec.encodeMessage(templateStyle);
+      final NativeTemplateStyle result = codec.decodeMessage(byteData);
+      // cornerRadius is dropped on android
+      expect(result.cornerRadius, null);
+      expect(result.templateType, templateStyle.templateType);
+      expect(result.callToActionTextStyle, templateStyle.callToActionTextStyle);
+      expect(result.primaryTextStyle, templateStyle.primaryTextStyle);
+      expect(result.secondaryTextStyle, templateStyle.secondaryTextStyle);
+      expect(result.tertiaryTextStyle, templateStyle.tertiaryTextStyle);
+      expect(result.mainBackgroundColor, templateStyle.mainBackgroundColor);
     });
   });
 }

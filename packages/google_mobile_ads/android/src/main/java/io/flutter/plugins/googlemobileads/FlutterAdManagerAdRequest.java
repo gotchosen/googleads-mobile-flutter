@@ -14,10 +14,10 @@
 
 package io.flutter.plugins.googlemobileads;
 
-import android.os.Bundle;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.google.ads.mediation.admob.AdMobAdapter;
 import com.google.android.gms.ads.admanager.AdManagerAdRequest;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -26,70 +26,87 @@ import java.util.Objects;
  * Instantiates and serializes {@link com.google.android.gms.ads.admanager.AdManagerAdRequest} for
  * the Google Mobile Ads Plugin.
  */
-class FlutterAdManagerAdRequest {
-  @Nullable private List<String> keywords;
-  @Nullable private String contentUrl;
-  @Nullable private Map<String, String> customTargeting;
-  @Nullable private Map<String, List<String>> customTargetingLists;
-  @Nullable private Boolean nonPersonalizedAds;
+class FlutterAdManagerAdRequest extends FlutterAdRequest {
 
-  public static class Builder {
-    @Nullable private List<String> keywords;
-    @Nullable private String contentUrl;
+  @Nullable private final Map<String, String> customTargeting;
+  @Nullable private final Map<String, List<String>> customTargetingLists;
+  @Nullable private final String publisherProvidedId;
+
+  static class Builder extends FlutterAdRequest.Builder {
+
     @Nullable private Map<String, String> customTargeting;
     @Nullable private Map<String, List<String>> customTargetingLists;
-    @Nullable private Boolean nonPersonalizedAds;
+    @Nullable private String publisherProvidedId;
 
-    public Builder setKeywords(@Nullable List<String> keywords) {
-      this.keywords = keywords;
-      return this;
-    }
-
-    public Builder setContentUrl(@Nullable String contentUrl) {
-      this.contentUrl = contentUrl;
-      return this;
-    }
-
+    @CanIgnoreReturnValue
     public Builder setCustomTargeting(@Nullable Map<String, String> customTargeting) {
       this.customTargeting = customTargeting;
       return this;
     }
 
+    @CanIgnoreReturnValue
     public Builder setCustomTargetingLists(
             @Nullable Map<String, List<String>> customTargetingLists) {
       this.customTargetingLists = customTargetingLists;
       return this;
     }
 
-    public Builder setNonPersonalizedAds(@Nullable Boolean nonPersonalizedAds) {
-      this.nonPersonalizedAds = nonPersonalizedAds;
+    @CanIgnoreReturnValue
+    public Builder setPublisherProvidedId(@Nullable String publisherProvidedId) {
+      this.publisherProvidedId = publisherProvidedId;
       return this;
     }
 
+    @Override
     FlutterAdManagerAdRequest build() {
-      final FlutterAdManagerAdRequest request = new FlutterAdManagerAdRequest();
-      request.keywords = keywords;
-      request.contentUrl = contentUrl;
-      request.customTargeting = customTargeting;
-      request.customTargetingLists = customTargetingLists;
-      request.nonPersonalizedAds = nonPersonalizedAds;
-      return request;
+      return new FlutterAdManagerAdRequest(
+          getKeywords(),
+          getContentUrl(),
+          customTargeting,
+          customTargetingLists,
+          getNonPersonalizedAds(),
+          getNeighboringContentUrls(),
+          getHttpTimeoutMillis(),
+          publisherProvidedId,
+          getMediationExtrasIdentifier(),
+          getMediationNetworkExtrasProvider(),
+          getAdMobExtras(),
+          getRequestAgent());
     }
   }
 
-  private FlutterAdManagerAdRequest() {}
+  private FlutterAdManagerAdRequest(
+      @Nullable List<String> keywords,
+      @Nullable String contentUrl,
+      @Nullable Map<String, String> customTargeting,
+      @Nullable Map<String, List<String>> customTargetingLists,
+      @Nullable Boolean nonPersonalizedAds,
+      @Nullable List<String> neighboringContentUrls,
+      @Nullable Integer httpTimeoutMillis,
+      @Nullable String publisherProvidedId,
+      @Nullable String mediationExtrasIdentifier,
+      @Nullable MediationNetworkExtrasProvider mediationNetworkExtrasProvider,
+      @Nullable Map<String, String> adMobExtras,
+      @NonNull String requestAgent) {
+    super(
+        keywords,
+        contentUrl,
+        nonPersonalizedAds,
+        neighboringContentUrls,
+        httpTimeoutMillis,
+        mediationExtrasIdentifier,
+        mediationNetworkExtrasProvider,
+        adMobExtras,
+        requestAgent);
+    this.customTargeting = customTargeting;
+    this.customTargetingLists = customTargetingLists;
+    this.publisherProvidedId = publisherProvidedId;
+  }
 
-  AdManagerAdRequest asAdManagerAdRequest() {
+  AdManagerAdRequest asAdManagerAdRequest(String adUnitId) {
     final AdManagerAdRequest.Builder builder = new AdManagerAdRequest.Builder();
-    if (keywords != null) {
-      for (final String keyword : keywords) {
-        builder.addKeyword(keyword);
-      }
-    }
+    updateAdRequestBuilder(builder, adUnitId);
 
-    if (contentUrl != null) {
-      builder.setContentUrl(contentUrl);
-    }
     if (customTargeting != null) {
       for (final Map.Entry<String, String> entry : customTargeting.entrySet()) {
         builder.addCustomTargeting(entry.getKey(), entry.getValue());
@@ -100,38 +117,25 @@ class FlutterAdManagerAdRequest {
         builder.addCustomTargeting(entry.getKey(), entry.getValue());
       }
     }
-    if (nonPersonalizedAds != null && nonPersonalizedAds) {
-      final Bundle extras = new Bundle();
-      extras.putString("npa", "1");
-      builder.addNetworkExtrasBundle(AdMobAdapter.class, extras);
+    if (publisherProvidedId != null) {
+      builder.setPublisherProvidedId(publisherProvidedId);
     }
-    builder.setRequestAgent(Constants.REQUEST_AGENT_PREFIX_VERSIONED);
     return builder.build();
   }
 
   @Nullable
-  public List<String> getKeywords() {
-    return keywords;
-  }
-
-  @Nullable
-  public String getContentUrl() {
-    return contentUrl;
-  }
-
-  @Nullable
-  public Map<String, String> getCustomTargeting() {
+  protected Map<String, String> getCustomTargeting() {
     return customTargeting;
   }
 
   @Nullable
-  public Map<String, List<String>> getCustomTargetingLists() {
+  protected Map<String, List<String>> getCustomTargetingLists() {
     return customTargetingLists;
   }
 
   @Nullable
-  public Boolean getNonPersonalizedAds() {
-    return nonPersonalizedAds;
+  protected String getPublisherProvidedId() {
+    return publisherProvidedId;
   }
 
   @Override
@@ -143,20 +147,13 @@ class FlutterAdManagerAdRequest {
     }
 
     FlutterAdManagerAdRequest request = (FlutterAdManagerAdRequest) o;
-
-    return Objects.equals(keywords, request.keywords)
-            && Objects.equals(contentUrl, request.contentUrl)
-            && Objects.equals(customTargeting, request.customTargeting)
-            && Objects.equals(nonPersonalizedAds, request.nonPersonalizedAds)
-            && Objects.equals(customTargetingLists, request.customTargetingLists);
+    return super.equals(o)
+        && Objects.equals(customTargeting, request.customTargeting)
+        && Objects.equals(customTargetingLists, request.customTargetingLists);
   }
 
   @Override
   public int hashCode() {
-    int result = keywords != null ? keywords.hashCode() : 0;
-    result = 31 * result + (contentUrl != null ? contentUrl.hashCode() : 0);
-    result = 31 * result + (customTargeting != null ? customTargeting.hashCode() : 0);
-    result = 31 * result + (customTargetingLists != null ? customTargetingLists.hashCode() : 0);
-    return result;
+    return Objects.hash(super.hashCode(), customTargeting, customTargetingLists);
   }
 }

@@ -19,15 +19,20 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.app.Activity;
+import android.content.Context;
+import androidx.test.core.app.ApplicationProvider;
+import com.google.android.ads.nativetemplates.TemplateView;
 import com.google.android.gms.ads.AdListener;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdValue;
@@ -38,18 +43,22 @@ import com.google.android.gms.ads.nativead.NativeAd;
 import com.google.android.gms.ads.nativead.NativeAd.OnNativeAdLoadedListener;
 import com.google.android.gms.ads.nativead.NativeAdOptions;
 import com.google.android.gms.ads.nativead.NativeAdView;
-import io.flutter.plugin.common.BinaryMessenger;
+import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.platform.PlatformView;
 import io.flutter.plugins.googlemobileads.FlutterAd.FlutterLoadAdError;
 import io.flutter.plugins.googlemobileads.GoogleMobileAdsPlugin.NativeAdFactory;
+import io.flutter.plugins.googlemobileads.nativetemplates.FlutterNativeTemplateStyle;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.robolectric.RobolectricTestRunner;
 
 /** Tests for {@link FlutterNativeAd}. */
+@RunWith(RobolectricTestRunner.class)
 public class FlutterNativeAdTest {
 
   private AdInstanceManager testManager;
@@ -57,27 +66,34 @@ public class FlutterNativeAdTest {
 
   @Before
   public void setup() {
-    testManager = spy(new AdInstanceManager(mock(Activity.class), mock(BinaryMessenger.class)));
+    testManager = spy(new AdInstanceManager(mock(MethodChannel.class)));
+    doReturn(mock(Activity.class)).when(testManager).getActivity();
   }
 
   @Test
   public void loadNativeAdWithAdManagerAdRequest() {
     final FlutterAdManagerAdRequest mockFlutterRequest = mock(FlutterAdManagerAdRequest.class);
     final AdManagerAdRequest mockRequest = mock(AdManagerAdRequest.class);
-    when(mockFlutterRequest.asAdManagerAdRequest()).thenReturn(mockRequest);
+    when(mockFlutterRequest.asAdManagerAdRequest(anyString())).thenReturn(mockRequest);
     FlutterAdLoader mockLoader = mock(FlutterAdLoader.class);
     NativeAdFactory mockNativeAdFactory = mock(NativeAdFactory.class);
     @SuppressWarnings("unchecked")
     Map<String, Object> mockOptions = mock(Map.class);
+    FlutterNativeAdOptions mockFlutterNativeAdOptions = mock(FlutterNativeAdOptions.class);
+    NativeAdOptions mockNativeAdOptions = mock(NativeAdOptions.class);
+    doReturn(mockNativeAdOptions).when(mockFlutterNativeAdOptions).asNativeAdOptions();
     final FlutterNativeAd nativeAd =
         new FlutterNativeAd(
+            ApplicationProvider.getApplicationContext(),
             1,
             testManager,
             "testId",
             mockNativeAdFactory,
             mockFlutterRequest,
             mockLoader,
-            mockOptions);
+            mockOptions,
+            mockFlutterNativeAdOptions,
+            null);
 
     final ResponseInfo responseInfo = mock(ResponseInfo.class);
     final NativeAd mockNativeAd = mock(NativeAd.class);
@@ -91,10 +107,10 @@ public class FlutterNativeAdTest {
             new Answer() {
               @Override
               public Object answer(InvocationOnMock invocation) {
-                OnNativeAdLoadedListener adLoadCallback = invocation.getArgument(2);
+                OnNativeAdLoadedListener adLoadCallback = invocation.getArgument(1);
                 adLoadCallback.onNativeAdLoaded(mockNativeAd);
 
-                AdListener listener = invocation.getArgument(4);
+                AdListener listener = invocation.getArgument(3);
                 listener.onAdOpened();
                 listener.onAdClosed();
                 listener.onAdClicked();
@@ -106,7 +122,6 @@ public class FlutterNativeAdTest {
             })
         .when(mockLoader)
         .loadAdManagerNativeAd(
-            eq(testManager.activity),
             eq("testId"),
             any(OnNativeAdLoadedListener.class),
             any(NativeAdOptions.class),
@@ -132,10 +147,9 @@ public class FlutterNativeAdTest {
     nativeAd.load();
     verify(mockLoader)
         .loadAdManagerNativeAd(
-            eq(testManager.activity),
             eq("testId"),
             any(OnNativeAdLoadedListener.class),
-            any(NativeAdOptions.class),
+            eq(mockNativeAdOptions),
             any(AdListener.class),
             eq(mockRequest));
 
@@ -144,7 +158,7 @@ public class FlutterNativeAdTest {
     verify(mockNativeAdFactory).createNativeAd(eq(mockNativeAd), eq(mockOptions));
     verify(testManager).onAdOpened(eq(1));
     verify(testManager).onAdClosed(eq(1));
-    verify(testManager).onNativeAdClicked(eq(1));
+    verify(testManager).onAdClicked(eq(1));
     verify(testManager).onAdImpression(eq(1));
     verify(testManager).onAdLoaded(eq(1), eq(responseInfo));
     FlutterLoadAdError expectedError = new FlutterLoadAdError(loadAdError);
@@ -160,7 +174,7 @@ public class FlutterNativeAdTest {
   public void loadNativeAdWithAdRequest() {
     final FlutterAdRequest mockFlutterRequest = mock(FlutterAdRequest.class);
     final AdRequest mockRequest = mock(AdRequest.class);
-    when(mockFlutterRequest.asAdRequest()).thenReturn(mockRequest);
+    when(mockFlutterRequest.asAdRequest(anyString())).thenReturn(mockRequest);
     FlutterAdLoader mockLoader = mock(FlutterAdLoader.class);
     NativeAdFactory mockNativeAdFactory = mock(GoogleMobileAdsPlugin.NativeAdFactory.class);
     NativeAdView mockNativeAdView = mock(NativeAdView.class);
@@ -169,15 +183,21 @@ public class FlutterNativeAdTest {
         .createNativeAd(any(NativeAd.class), any(Map.class));
     @SuppressWarnings("unchecked")
     Map<String, Object> mockOptions = mock(Map.class);
+    FlutterNativeAdOptions mockFlutterNativeAdOptions = mock(FlutterNativeAdOptions.class);
+    NativeAdOptions mockNativeAdOptions = mock(NativeAdOptions.class);
+    doReturn(mockNativeAdOptions).when(mockFlutterNativeAdOptions).asNativeAdOptions();
     final FlutterNativeAd nativeAd =
         new FlutterNativeAd(
+            ApplicationProvider.getApplicationContext(),
             1,
             testManager,
             "testId",
             mockNativeAdFactory,
             mockFlutterRequest,
             mockLoader,
-            mockOptions);
+            mockOptions,
+            mockFlutterNativeAdOptions,
+            null);
 
     final ResponseInfo responseInfo = mock(ResponseInfo.class);
     final NativeAd mockNativeAd = mock(NativeAd.class);
@@ -192,10 +212,10 @@ public class FlutterNativeAdTest {
             new Answer() {
               @Override
               public Object answer(InvocationOnMock invocation) throws Throwable {
-                OnNativeAdLoadedListener adLoadCallback = invocation.getArgument(2);
+                OnNativeAdLoadedListener adLoadCallback = invocation.getArgument(1);
                 adLoadCallback.onNativeAdLoaded(mockNativeAd);
 
-                AdListener listener = invocation.getArgument(4);
+                AdListener listener = invocation.getArgument(3);
                 listener.onAdOpened();
                 listener.onAdClosed();
                 listener.onAdClicked();
@@ -207,7 +227,6 @@ public class FlutterNativeAdTest {
             })
         .when(mockLoader)
         .loadNativeAd(
-            eq(testManager.activity),
             eq("testId"),
             any(OnNativeAdLoadedListener.class),
             any(NativeAdOptions.class),
@@ -217,10 +236,9 @@ public class FlutterNativeAdTest {
     nativeAd.load();
     verify(mockLoader)
         .loadNativeAd(
-            eq(testManager.activity),
             eq("testId"),
             any(OnNativeAdLoadedListener.class),
-            any(NativeAdOptions.class),
+            eq(mockNativeAdOptions),
             any(AdListener.class),
             eq(mockRequest));
 
@@ -228,7 +246,7 @@ public class FlutterNativeAdTest {
     verify(testManager).onAdLoaded(eq(1), eq(responseInfo));
     verify(testManager).onAdOpened(eq(1));
     verify(testManager).onAdClosed(eq(1));
-    verify(testManager).onNativeAdClicked(eq(1));
+    verify(testManager).onAdClicked(eq(1));
     verify(testManager).onAdImpression(eq(1));
     FlutterLoadAdError expectedError = new FlutterLoadAdError(loadAdError);
     verify(testManager).onAdFailedToLoad(eq(1), eq(expectedError));
@@ -246,9 +264,79 @@ public class FlutterNativeAdTest {
     assertNull(platformView.getView());
   }
 
+  @Test
+  public void testLoadWithNativeTemplates() {
+    final FlutterAdRequest mockFlutterRequest = mock(FlutterAdRequest.class);
+    final AdRequest mockRequest = mock(AdRequest.class);
+    when(mockFlutterRequest.asAdRequest(anyString())).thenReturn(mockRequest);
+    FlutterAdLoader mockLoader = mock(FlutterAdLoader.class);
+    NativeAdFactory mockNativeAdFactory = mock(GoogleMobileAdsPlugin.NativeAdFactory.class);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> mockOptions = mock(Map.class);
+    FlutterNativeAdOptions mockFlutterNativeAdOptions = mock(FlutterNativeAdOptions.class);
+    NativeAdOptions mockNativeAdOptions = mock(NativeAdOptions.class);
+    doReturn(mockNativeAdOptions).when(mockFlutterNativeAdOptions).asNativeAdOptions();
+    TemplateView mockTemplateView = mock(TemplateView.class);
+    FlutterNativeTemplateStyle mockStyle = mock(FlutterNativeTemplateStyle.class);
+    doReturn(mockTemplateView).when(mockStyle).asTemplateView(any());
+
+    final FlutterNativeAd nativeAd =
+        new FlutterNativeAd(
+            ApplicationProvider.getApplicationContext(),
+            1,
+            testManager,
+            "testId",
+            mockNativeAdFactory,
+            mockFlutterRequest,
+            mockLoader,
+            mockOptions,
+            mockFlutterNativeAdOptions,
+            mockStyle);
+
+    final ResponseInfo responseInfo = mock(ResponseInfo.class);
+    final NativeAd mockNativeAd = mock(NativeAd.class);
+    doReturn(responseInfo).when(mockNativeAd).getResponseInfo();
+    doAnswer(
+            new Answer() {
+              @Override
+              public Object answer(InvocationOnMock invocation) throws Throwable {
+                OnNativeAdLoadedListener adLoadCallback = invocation.getArgument(1);
+                adLoadCallback.onNativeAdLoaded(mockNativeAd);
+
+                AdListener listener = invocation.getArgument(3);
+                listener.onAdOpened();
+                return null;
+              }
+            })
+        .when(mockLoader)
+        .loadNativeAd(
+            eq("testId"),
+            any(OnNativeAdLoadedListener.class),
+            any(NativeAdOptions.class),
+            any(AdListener.class),
+            eq(mockRequest));
+
+    nativeAd.load();
+    verify(mockLoader)
+        .loadNativeAd(
+            eq("testId"),
+            any(OnNativeAdLoadedListener.class),
+            eq(mockNativeAdOptions),
+            any(AdListener.class),
+            eq(mockRequest));
+
+    verify(testManager).onAdLoaded(eq(1), eq(responseInfo));
+    verify(mockNativeAdFactory, never()).createNativeAd(eq(mockNativeAd), eq(mockOptions));
+    verify(mockStyle).asTemplateView(any(Context.class));
+
+    // Check that platform view is defined and equal to the template view.
+    PlatformView platformView = nativeAd.getPlatformView();
+    assertEquals(platformView.getView(), mockTemplateView);
+  }
+
   @Test(expected = IllegalStateException.class)
   public void nativeAdBuilderNullManager() {
-    new FlutterNativeAd.Builder()
+    new FlutterNativeAd.Builder(ApplicationProvider.getApplicationContext())
         .setManager(null)
         .setAdUnitId("testId")
         .setAdFactory(mock(GoogleMobileAdsPlugin.NativeAdFactory.class))
@@ -258,7 +346,7 @@ public class FlutterNativeAdTest {
 
   @Test(expected = IllegalStateException.class)
   public void nativeAdBuilderNullAdUnitId() {
-    new FlutterNativeAd.Builder()
+    new FlutterNativeAd.Builder(ApplicationProvider.getApplicationContext())
         .setManager(testManager)
         .setAdUnitId(null)
         .setAdFactory(mock(GoogleMobileAdsPlugin.NativeAdFactory.class))
@@ -268,7 +356,7 @@ public class FlutterNativeAdTest {
 
   @Test(expected = IllegalStateException.class)
   public void nativeAdBuilderNullAdFactory() {
-    new FlutterNativeAd.Builder()
+    new FlutterNativeAd.Builder(ApplicationProvider.getApplicationContext())
         .setManager(testManager)
         .setAdUnitId("testId")
         .setAdFactory(null)
@@ -278,21 +366,10 @@ public class FlutterNativeAdTest {
 
   @Test(expected = IllegalStateException.class)
   public void nativeAdBuilderNullRequest() {
-    new FlutterNativeAd.Builder()
+    new FlutterNativeAd.Builder(ApplicationProvider.getApplicationContext())
         .setManager(testManager)
         .setAdUnitId("testId")
         .setAdFactory(mock(GoogleMobileAdsPlugin.NativeAdFactory.class))
         .build();
-  }
-
-  public void paidEvent() {
-    FlutterNativeAd nativeAd =
-        new FlutterNativeAd.Builder()
-            .setManager(testManager)
-            .setAdUnitId("adUnitId")
-            .setRequest(request)
-            .setAdFactory(mock(GoogleMobileAdsPlugin.NativeAdFactory.class))
-            .build();
-    nativeAd.load();
   }
 }

@@ -25,15 +25,17 @@ typedef GenericAdEventCallback<Ad> = void Function(Ad ad);
 /// A callback type for when an error occurs loading a full screen ad.
 typedef FullScreenAdLoadErrorCallback = void Function(LoadAdError error);
 
-/// The callback type for when a user earns a reward from a [RewardedAd].
-typedef OnUserEarnedRewardCallback = void Function(RewardedAd ad, RewardItem reward);
+/// The callback type for when a user earns a reward.
+typedef OnUserEarnedRewardCallback = void Function(AdWithoutView ad, RewardItem reward);
 
 /// The callback type to handle an error loading an [Ad].
 typedef AdLoadErrorCallback = void Function(Ad ad, LoadAdError error);
 
 /// The callback type for when an ad receives revenue value.
-typedef OnPaidEventCallback = void Function(
-    Ad ad, double valueMicros, PrecisionType precision, String currencyCode);
+typedef OnPaidEventCallback = void Function(Ad ad, double valueMicros, PrecisionType precision, String currencyCode);
+
+/// The callback type for when a fluid ad's height changes.
+typedef OnFluidAdHeightChangedListener = void Function(FluidAdManagerBannerAd ad, double height);
 
 /// Allowed constants for precision type in [OnPaidEventCallback].
 enum PrecisionType {
@@ -68,6 +70,7 @@ abstract class AdWithViewListener {
     this.onAdImpression,
     this.onAdClosed,
     this.onPaidEvent,
+    this.onAdClicked,
   });
 
   /// Called when an ad is successfully received.
@@ -90,6 +93,9 @@ abstract class AdWithViewListener {
 
   /// Called when an impression occurs on the ad.
   final AdEventCallback? onAdImpression;
+
+  /// Called when the ad is clicked.
+  final AdEventCallback? onAdClicked;
 
   /// Callback to be invoked when an ad is estimated to have earned money.
   /// Available for allowlisted accounts only.
@@ -120,6 +126,7 @@ class BannerAdListener extends AdWithViewListener {
     AdEventCallback? onAdWillDismissScreen,
     AdEventCallback? onAdImpression,
     OnPaidEventCallback? onPaidEvent,
+    AdEventCallback? onAdClicked,
   }) : super(
           onAdLoaded: onAdLoaded,
           onAdFailedToLoad: onAdFailedToLoad,
@@ -128,6 +135,7 @@ class BannerAdListener extends AdWithViewListener {
           onAdWillDismissScreen: onAdWillDismissScreen,
           onAdImpression: onAdImpression,
           onPaidEvent: onPaidEvent,
+          onAdClicked: onAdClicked,
         );
 }
 
@@ -156,14 +164,17 @@ class AdManagerBannerAdListener extends BannerAdListener implements AppEventList
     AdEventCallback? onAdImpression,
     OnPaidEventCallback? onPaidEvent,
     this.onAppEvent,
+    AdEventCallback? onAdClicked,
   }) : super(
-            onAdLoaded: onAdLoaded,
-            onAdFailedToLoad: onAdFailedToLoad,
-            onAdOpened: onAdOpened,
-            onAdWillDismissScreen: onAdWillDismissScreen,
-            onAdClosed: onAdClosed,
-            onAdImpression: onAdImpression,
-            onPaidEvent: onPaidEvent);
+          onAdLoaded: onAdLoaded,
+          onAdFailedToLoad: onAdFailedToLoad,
+          onAdOpened: onAdOpened,
+          onAdWillDismissScreen: onAdWillDismissScreen,
+          onAdClosed: onAdClosed,
+          onAdImpression: onAdImpression,
+          onPaidEvent: onPaidEvent,
+          onAdClicked: onAdClicked,
+        );
 
   /// Called when an app event is received.
   @override
@@ -194,7 +205,7 @@ class NativeAdListener extends AdWithViewListener {
     AdEventCallback? onAdClosed,
     AdEventCallback? onAdImpression,
     OnPaidEventCallback? onPaidEvent,
-    this.onNativeAdClicked,
+    AdEventCallback? onAdClicked,
   }) : super(
             onAdLoaded: onAdLoaded,
             onAdFailedToLoad: onAdFailedToLoad,
@@ -202,10 +213,8 @@ class NativeAdListener extends AdWithViewListener {
             onAdWillDismissScreen: onAdWillDismissScreen,
             onAdClosed: onAdClosed,
             onAdImpression: onAdImpression,
-            onPaidEvent: onPaidEvent);
-
-  /// Called when a click is recorded for a [NativeAd].
-  final void Function(NativeAd ad)? onNativeAdClicked;
+            onPaidEvent: onPaidEvent,
+            onAdClicked: onAdClicked);
 }
 
 /// Callback events for for full screen ads, such as Rewarded and Interstitial.
@@ -220,6 +229,7 @@ class FullScreenContentCallback<Ad> {
     this.onAdFailedToShowFullScreenContent,
     this.onAdWillDismissFullScreenContent,
     this.onAdDismissedFullScreenContent,
+    this.onAdClicked,
   });
 
   /// Called when an ad shows full screen content.
@@ -233,6 +243,9 @@ class FullScreenContentCallback<Ad> {
 
   /// Called when an ad impression occurs.
   final GenericAdEventCallback<Ad>? onAdImpression;
+
+  /// Called when an ad is clicked.
+  final GenericAdEventCallback<Ad>? onAdClicked;
 
   /// Called when ad fails to show full screen content.
   final void Function(Ad ad, AdError error)? onAdFailedToShowFullScreenContent;
@@ -256,10 +269,17 @@ abstract class FullScreenAdLoadCallback<T> {
 /// This class holds callbacks for loading a [RewardedAd].
 class RewardedAdLoadCallback extends FullScreenAdLoadCallback<RewardedAd> {
   /// Construct a [RewardedAdLoadCallback].
-  ///
-  /// [Ad.dispose] should be invoked from [onAdFailedToLoad].
   const RewardedAdLoadCallback({
     required GenericAdEventCallback<RewardedAd> onAdLoaded,
+    required FullScreenAdLoadErrorCallback onAdFailedToLoad,
+  }) : super(onAdLoaded: onAdLoaded, onAdFailedToLoad: onAdFailedToLoad);
+}
+
+/// This class holds callbacks for loading an [AppOpenAd].
+class AppOpenAdLoadCallback extends FullScreenAdLoadCallback<AppOpenAd> {
+  /// Construct an [AppOpenAdLoadCallback].
+  const AppOpenAdLoadCallback({
+    required GenericAdEventCallback<AppOpenAd> onAdLoaded,
     required FullScreenAdLoadErrorCallback onAdFailedToLoad,
   }) : super(onAdLoaded: onAdLoaded, onAdFailedToLoad: onAdFailedToLoad);
 }
@@ -267,8 +287,6 @@ class RewardedAdLoadCallback extends FullScreenAdLoadCallback<RewardedAd> {
 /// This class holds callbacks for loading an [InterstitialAd].
 class InterstitialAdLoadCallback extends FullScreenAdLoadCallback<InterstitialAd> {
   /// Construct a [InterstitialAdLoadCallback].
-  ///
-  /// [Ad.dispose] should be invoked from [onAdFailedToLoad].
   const InterstitialAdLoadCallback({
     required GenericAdEventCallback<InterstitialAd> onAdLoaded,
     required FullScreenAdLoadErrorCallback onAdFailedToLoad,
@@ -278,10 +296,17 @@ class InterstitialAdLoadCallback extends FullScreenAdLoadCallback<InterstitialAd
 /// This class holds callbacks for loading an [AdManagerInterstitialAd].
 class AdManagerInterstitialAdLoadCallback extends FullScreenAdLoadCallback<AdManagerInterstitialAd> {
   /// Construct a [AdManagerInterstitialAdLoadCallback].
-  ///
-  /// [Ad.dispose] should be invoked from [onAdFailedToLoad].
   const AdManagerInterstitialAdLoadCallback({
     required GenericAdEventCallback<AdManagerInterstitialAd> onAdLoaded,
+    required FullScreenAdLoadErrorCallback onAdFailedToLoad,
+  }) : super(onAdLoaded: onAdLoaded, onAdFailedToLoad: onAdFailedToLoad);
+}
+
+/// This class holds callbacks for loading a [RewardedInterstitialAd].
+class RewardedInterstitialAdLoadCallback extends FullScreenAdLoadCallback<RewardedInterstitialAd> {
+  /// Construct a [RewardedInterstitialAdLoadCallback].
+  const RewardedInterstitialAdLoadCallback({
+    required GenericAdEventCallback<RewardedInterstitialAd> onAdLoaded,
     required FullScreenAdLoadErrorCallback onAdFailedToLoad,
   }) : super(onAdLoaded: onAdLoaded, onAdFailedToLoad: onAdFailedToLoad);
 }

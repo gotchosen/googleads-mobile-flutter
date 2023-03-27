@@ -34,7 +34,6 @@ class FlutterRewardedAd extends FlutterAd.FlutterOverlayAd {
   @NonNull private final FlutterAdLoader flutterAdLoader;
   @Nullable private final FlutterAdRequest request;
   @Nullable private final FlutterAdManagerAdRequest adManagerRequest;
-  @Nullable private final FlutterServerSideVerificationOptions serverSideVerificationOptions;
   @Nullable RewardedAd rewardedAd;
 
   /** A wrapper for {@link RewardItem}. */
@@ -76,14 +75,12 @@ class FlutterRewardedAd extends FlutterAd.FlutterOverlayAd {
       @NonNull AdInstanceManager manager,
       @NonNull String adUnitId,
       @NonNull FlutterAdRequest request,
-      @Nullable FlutterServerSideVerificationOptions serverSideVerificationOptions,
       @NonNull FlutterAdLoader flutterAdLoader) {
     super(adId);
     this.manager = manager;
     this.adUnitId = adUnitId;
     this.request = request;
     this.adManagerRequest = null;
-    this.serverSideVerificationOptions = serverSideVerificationOptions;
     this.flutterAdLoader = flutterAdLoader;
   }
 
@@ -93,14 +90,12 @@ class FlutterRewardedAd extends FlutterAd.FlutterOverlayAd {
       @NonNull AdInstanceManager manager,
       @NonNull String adUnitId,
       @NonNull FlutterAdManagerAdRequest adManagerRequest,
-      @Nullable FlutterServerSideVerificationOptions serverSideVerificationOptions,
       @NonNull FlutterAdLoader flutterAdLoader) {
     super(adId);
     this.manager = manager;
     this.adUnitId = adUnitId;
     this.adManagerRequest = adManagerRequest;
     this.request = null;
-    this.serverSideVerificationOptions = serverSideVerificationOptions;
     this.flutterAdLoader = flutterAdLoader;
   }
 
@@ -108,11 +103,10 @@ class FlutterRewardedAd extends FlutterAd.FlutterOverlayAd {
   void load() {
     final RewardedAdLoadCallback adLoadCallback = new DelegatingRewardedCallback(this);
     if (request != null) {
-      flutterAdLoader.loadRewarded(
-              manager.activity, adUnitId, request.asAdRequest(), adLoadCallback);
+      flutterAdLoader.loadRewarded(adUnitId, request.asAdRequest(adUnitId), adLoadCallback);
     } else if (adManagerRequest != null) {
       flutterAdLoader.loadAdManagerRewarded(
-              manager.activity, adUnitId, adManagerRequest.asAdManagerAdRequest(), adLoadCallback);
+          adUnitId, adManagerRequest.asAdManagerAdRequest(adUnitId), adLoadCallback);
     } else {
       Log.e(TAG, "A null or invalid ad request was provided.");
     }
@@ -120,10 +114,6 @@ class FlutterRewardedAd extends FlutterAd.FlutterOverlayAd {
 
   void onAdLoaded(@NonNull RewardedAd rewardedAd) {
     FlutterRewardedAd.this.rewardedAd = rewardedAd;
-    if (serverSideVerificationOptions != null) {
-      rewardedAd.setServerSideVerificationOptions(
-          serverSideVerificationOptions.asServerSideVerificationOptions());
-    }
     rewardedAd.setOnPaidEventListener(new FlutterPaidEventListener(manager, this));
     manager.onAdLoaded(adId, rewardedAd.getResponseInfo());
   }
@@ -135,13 +125,26 @@ class FlutterRewardedAd extends FlutterAd.FlutterOverlayAd {
   @Override
   public void show() {
     if (rewardedAd == null) {
-      Log.e(TAG, "The rewarded ad wasn't loaded yet.");
+      Log.e(TAG, "Error showing rewarded - the rewarded ad wasn't loaded yet.");
       return;
     }
-
+    if (manager.getActivity() == null) {
+      Log.e(TAG, "Tried to show rewarded ad before activity was bound to the plugin.");
+      return;
+    }
     rewardedAd.setFullScreenContentCallback(new FlutterFullScreenContentCallback(manager, adId));
     rewardedAd.setOnAdMetadataChangedListener(new DelegatingRewardedCallback(this));
-    rewardedAd.show(manager.activity, new DelegatingRewardedCallback(this));
+    rewardedAd.show(manager.getActivity(), new DelegatingRewardedCallback(this));
+  }
+
+  @Override
+  public void setImmersiveMode(boolean immersiveModeEnabled) {
+    if (rewardedAd == null) {
+      Log.e(
+          TAG, "Error setting immersive mode in rewarded ad - the rewarded ad wasn't loaded yet.");
+      return;
+    }
+    rewardedAd.setImmersiveMode(immersiveModeEnabled);
   }
 
   void onAdMetadataChanged() {
@@ -156,6 +159,14 @@ class FlutterRewardedAd extends FlutterAd.FlutterOverlayAd {
   @Override
   void dispose() {
     rewardedAd = null;
+  }
+
+  public void setServerSideVerificationOptions(FlutterServerSideVerificationOptions options) {
+    if (rewardedAd != null) {
+      rewardedAd.setServerSideVerificationOptions(options.asServerSideVerificationOptions());
+    } else {
+      Log.e(TAG, "RewardedAd is null in setServerSideVerificationOptions");
+    }
   }
 
   /**

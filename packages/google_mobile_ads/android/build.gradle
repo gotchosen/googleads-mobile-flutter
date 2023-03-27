@@ -4,7 +4,7 @@ version '1.0-SNAPSHOT'
 buildscript {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 
     dependencies {
@@ -15,29 +15,46 @@ buildscript {
 rootProject.allprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
     }
 }
 
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
 
     defaultConfig {
         minSdkVersion 19
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     lintOptions {
         disable 'InvalidPackage'
     }
     dependencies {
+<<<<<<< HEAD
         api 'com.google.android.gms:play-services-ads:20.2.0'
         api 'org.prebid:prebid-mobile-sdk:1.12'
         testImplementation 'junit:junit:4.12'
         testImplementation 'org.hamcrest:hamcrest:2.2'
         testImplementation 'org.mockito:mockito-inline:3.9.0'
+=======
+      api 'com.google.android.gms:play-services-ads:21.3.0'
+      implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+      implementation 'androidx.lifecycle:lifecycle-process:2.2.0'
+      implementation 'com.google.errorprone:error_prone_annotations:2.16'
+      testImplementation 'junit:junit:4.12'
+      testImplementation 'org.hamcrest:hamcrest:2.2'
+      testImplementation 'org.mockito:mockito-inline:3.9.0'
+      testImplementation 'org.robolectric:robolectric:4.4'
+      testImplementation 'androidx.test:core:1.3.0'
+
+>>>>>>> 2137b057c1c60b537223453dd809df1b40d93c6d
     }
+  testOptions {
+    unitTests {
+      includeAndroidResources = true
+    }
+  }
 }
 
 afterEvaluate {
