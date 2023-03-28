@@ -431,6 +431,7 @@
 @implementation FLTGAMBannerAd {
   GAMBannerView *_bannerView;
   FLTGAMAdRequest *_adRequest;
+  BannerAdUnit *_bannerUnit;
   NSString *_adUnitId;
 }
 
@@ -441,6 +442,13 @@
                             adId:(NSNumber *_Nonnull)adId {
   self = [super init];
   if (self) {
+    Prebid.shared.prebidServerAccountId = @"11011";
+    NSError* err=nil;
+      [[Prebid shared] setCustomPrebidServerWithUrl:@"https://ib.adnxs.com/openrtb2/prebid" error:&err];
+    if(err == nil)
+
+    _bannerUnit = [[BannerAdUnit alloc] initWithConfigId:@"20685367" size:CGSizeMake(320, 50)];
+
     self.adId = adId;
     _adRequest = request;
     _adUnitId = adUnitId;
