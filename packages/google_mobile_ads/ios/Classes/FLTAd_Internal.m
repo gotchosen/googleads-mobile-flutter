@@ -485,7 +485,14 @@
 }
 
 - (void)load {
-  [self.bannerView loadRequest:[_adRequest asGAMRequest:_adUnitId]];
+  //[self.bannerView loadRequest:[_adRequest asGAMRequest:_adUnitId]];
+  GAMRequest *_dfpRequest = _adRequest.asGAMRequest;
+  [_bannerUnit fetchDemandWithAdObject:_dfpRequest completion:^(enum ResultCode result) {
+       NSLog(@"Prebid demand result %ld", (long)result);
+       dispatch_async(dispatch_get_main_queue(), ^{
+           [self.bannerView loadRequest:_dfpRequest];
+       });
+  }];
 }
 
 #pragma mark - FlutterPlatformView
