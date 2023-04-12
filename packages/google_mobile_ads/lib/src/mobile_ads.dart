@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
+import 'ad_inspector_containers.dart';
 import 'ad_instance_manager.dart';
 import 'request_configuration.dart';
 import 'package:flutter/foundation.dart';
@@ -45,14 +48,21 @@ class MobileAds {
   ///
   /// If this method is not called, the first ad request automatically
   /// initializes the Google Mobile Ads SDK.
-  Future<InitializationStatus> initialize() async {
-    return (await instanceManager.channel.invokeMethod<InitializationStatus>(
-      'MobileAds#initialize',
-    ))!;
+  Future<InitializationStatus> initialize() {
+    return instanceManager.initialize();
+  }
+
+  /// Get the current [RequestConfiguration].
+  ///
+  /// On iOS, tagForUnderAgeOfConsent and tagForChildDirectedTreatment are null on
+  /// the returned [RequestConfiguration].
+  Future<RequestConfiguration> getRequestConfiguration() {
+    return instanceManager.getRequestConfiguration();
   }
 
   /// Update the [RequestConfiguration] to apply for future ad requests.
-  Future<void> updateRequestConfiguration(RequestConfiguration requestConfiguration) {
+  Future<void> updateRequestConfiguration(
+      RequestConfiguration requestConfiguration) {
     return instanceManager.updateRequestConfiguration(requestConfiguration);
   }
 
@@ -68,6 +78,62 @@ class MobileAds {
     } else {
       return Future.value();
     }
+  }
+
+  /// Sets whether the app is muted.
+  ///
+  /// For more details about the volume control, visit
+  /// https://developers.google.com/admob/android/global-settings#video_ad_volume_control
+  Future<void> setAppMuted(bool muted) {
+    return instanceManager.setAppMuted(muted);
+  }
+
+  /// Sets the current app volume.
+  ///
+  /// [volume] should be from 0 (muted) to 1 (full media volume).
+  /// The default value is 1.
+  /// For more details about the volume control, visit
+  /// https://developers.google.com/android/reference/com/google/android/gms/ads/MobileAds#public-static-void-setappvolume-float-volume
+  Future<void> setAppVolume(double volume) {
+    return instanceManager.setAppVolume(volume);
+  }
+
+  /// Disables automated SDK crash reporting (iOS only).
+  ///
+  /// For more details, visit admob (iOS) documentation:
+  /// https://developers.google.com/admob/ios/api/reference/Classes/GADMobileAds#-disablesdkcrashreporting
+  Future<void> disableSDKCrashReporting() {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return instanceManager.disableSDKCrashReporting();
+    } else {
+      return Future.value();
+    }
+  }
+
+  /// Disables mediation adapter initialization during initialization of the GMA SDK.
+  ///
+  /// For more details, visit admob documentation:
+  /// https://developers.google.com/admob/ios/api/reference/Classes/GADMobileAds#-disablemediationinitialization
+  Future<void> disableMediationInitialization() {
+    return instanceManager.disableMediationInitialization();
+  }
+
+  /// Gets the version string of Google Mobile Ads SDK.
+  Future<String> getVersionString() {
+    return instanceManager.getVersionString();
+  }
+
+  /// Opens the debug menu for the [adUnitId].
+  ///
+  /// Returns a Future that completes when the platform side api has been
+  /// invoked.
+  Future<void> openDebugMenu(String adUnitId) {
+    return instanceManager.openDebugMenu(adUnitId);
+  }
+
+  /// Open the ad inspector.
+  void openAdInspector(OnAdInspectorClosedListener listener) async {
+    instanceManager.openAdInspector(listener);
   }
 
   /// Internal init to cleanup state for hot restart.

@@ -28,104 +28,116 @@ import java.lang.ref.WeakReference;
  * Google Mobile Ads Plugin.
  */
 class FlutterAdManagerInterstitialAd extends FlutterAd.FlutterOverlayAd {
-    private static final String TAG = "FlutterAdManagerInterstitialAd";
+  private static final String TAG = "FltGAMInterstitialAd";
 
-    @NonNull private final AdInstanceManager manager;
-    @NonNull private final String adUnitId;
-    @NonNull private final FlutterAdManagerAdRequest request;
-    @Nullable private AdManagerInterstitialAd ad;
-    @NonNull private final FlutterAdLoader flutterAdLoader;
+  @NonNull private final AdInstanceManager manager;
+  @NonNull private final String adUnitId;
+  @NonNull private final FlutterAdManagerAdRequest request;
+  @Nullable private AdManagerInterstitialAd ad;
+  @NonNull private final FlutterAdLoader flutterAdLoader;
 
-    /**
-     * Constructs a `FlutterAdManagerInterstitialAd`.
-     *
-     * <p>Call `load()` to instantiate the `AdView` and load the `AdRequest`. `getView()` will return
-     * null only until `load` is called.
-     */
-    public FlutterAdManagerInterstitialAd(
-            int adId,
-            @NonNull AdInstanceManager manager,
-            @NonNull String adUnitId,
-            @NonNull FlutterAdManagerAdRequest request,
-            @NonNull FlutterAdLoader flutterAdLoader) {
-        super(adId);
-        this.manager = manager;
-        this.adUnitId = adUnitId;
-        this.request = request;
-        this.flutterAdLoader = flutterAdLoader;
+  /**
+   * Constructs a `FlutterAdManagerInterstitialAd`.
+   *
+   * <p>Call `load()` to instantiate the `AdView` and load the `AdRequest`. `getView()` will return
+   * null only until `load` is called.
+   */
+  public FlutterAdManagerInterstitialAd(
+      int adId,
+      @NonNull AdInstanceManager manager,
+      @NonNull String adUnitId,
+      @NonNull FlutterAdManagerAdRequest request,
+      @NonNull FlutterAdLoader flutterAdLoader) {
+    super(adId);
+    this.manager = manager;
+    this.adUnitId = adUnitId;
+    this.request = request;
+    this.flutterAdLoader = flutterAdLoader;
+  }
+
+  @Override
+  void load() {
+    flutterAdLoader.loadAdManagerInterstitial(
+        adUnitId,
+        request.asAdManagerAdRequest(adUnitId),
+        new DelegatingAdManagerInterstitialAdCallbacks(this));
+  }
+
+  void onAdLoaded(AdManagerInterstitialAd ad) {
+    this.ad = ad;
+    ad.setAppEventListener(new DelegatingAdManagerInterstitialAdCallbacks(this));
+    ad.setOnPaidEventListener(new FlutterPaidEventListener(manager, this));
+    manager.onAdLoaded(adId, ad.getResponseInfo());
+  }
+
+  void onAdFailedToLoad(LoadAdError loadAdError) {
+    manager.onAdFailedToLoad(adId, new FlutterLoadAdError(loadAdError));
+  }
+
+  void onAppEvent(@NonNull String name, @NonNull String data) {
+    manager.onAppEvent(adId, name, data);
+  }
+
+  @Override
+  public void show() {
+    if (ad == null) {
+      Log.e(TAG, "The interstitial wasn't loaded yet.");
+      return;
+    }
+    if (manager.getActivity() == null) {
+      Log.e(TAG, "Tried to show interstitial before activity was bound to the plugin.");
+      return;
+    }
+    ad.setFullScreenContentCallback(new FlutterFullScreenContentCallback(manager, adId));
+    ad.show(manager.getActivity());
+  }
+
+  @Override
+  public void setImmersiveMode(boolean immersiveModeEnabled) {
+    if (ad == null) {
+      Log.e(TAG, "The interstitial wasn't loaded yet.");
+      return;
+    }
+    ad.setImmersiveMode(immersiveModeEnabled);
+  }
+
+  @Override
+  void dispose() {
+    ad = null;
+  }
+
+  /**
+   * This class delegates various rewarded ad callbacks to FlutterAdManagerInterstitialAd. Maintains
+   * a weak reference to avoid memory leaks.
+   */
+  private static final class DelegatingAdManagerInterstitialAdCallbacks
+      extends AdManagerInterstitialAdLoadCallback implements AppEventListener {
+
+    private final WeakReference<FlutterAdManagerInterstitialAd> delegate;
+
+    DelegatingAdManagerInterstitialAdCallbacks(FlutterAdManagerInterstitialAd delegate) {
+      this.delegate = new WeakReference<>(delegate);
     }
 
     @Override
-    void load() {
-        flutterAdLoader.loadAdManagerInterstitial(
-                manager.activity,
-                adUnitId,
-                request.asAdManagerAdRequest(),
-                new DelegatingAdManagerInterstitialAdCallbacks(this));
-    }
-
-    void onAdLoaded(AdManagerInterstitialAd ad) {
-        this.ad = ad;
-        ad.setAppEventListener(new DelegatingAdManagerInterstitialAdCallbacks(this));
-        ad.setOnPaidEventListener(new FlutterPaidEventListener(manager, this));
-        manager.onAdLoaded(adId, ad.getResponseInfo());
-    }
-
-    void onAdFailedToLoad(LoadAdError loadAdError) {
-        manager.onAdFailedToLoad(adId, new FlutterLoadAdError(loadAdError));
-    }
-
-    void onAppEvent(@NonNull String name, @NonNull String data) {
-        manager.onAppEvent(adId, name, data);
+    public void onAdLoaded(@NonNull AdManagerInterstitialAd interstitialAd) {
+      if (delegate.get() != null) {
+        delegate.get().onAdLoaded(interstitialAd);
+      }
     }
 
     @Override
-    public void show() {
-        if (ad == null) {
-            Log.e(TAG, "The interstitial wasn't loaded yet.");
-            return;
-        }
-        ad.setFullScreenContentCallback(new FlutterFullScreenContentCallback(manager, adId));
-        ad.show(manager.activity);
+    public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+      if (delegate.get() != null) {
+        delegate.get().onAdFailedToLoad(loadAdError);
+      }
     }
 
     @Override
-    void dispose() {
-        ad = null;
+    public void onAppEvent(@NonNull String name, @NonNull String data) {
+      if (delegate.get() != null) {
+        delegate.get().onAppEvent(name, data);
+      }
     }
-
-    /**
-     * This class delegates various rewarded ad callbacks to FlutterAdManagerInterstitialAd. Maintains
-     * a weak reference to avoid memory leaks.
-     */
-    private static final class DelegatingAdManagerInterstitialAdCallbacks
-            extends AdManagerInterstitialAdLoadCallback implements AppEventListener {
-
-        private final WeakReference<FlutterAdManagerInterstitialAd> delegate;
-
-        DelegatingAdManagerInterstitialAdCallbacks(FlutterAdManagerInterstitialAd delegate) {
-            this.delegate = new WeakReference<>(delegate);
-        }
-
-        @Override
-        public void onAdLoaded(@NonNull AdManagerInterstitialAd interstitialAd) {
-            if (delegate.get() != null) {
-                delegate.get().onAdLoaded(interstitialAd);
-            }
-        }
-
-        @Override
-        public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-            if (delegate.get() != null) {
-                delegate.get().onAdFailedToLoad(loadAdError);
-            }
-        }
-
-        @Override
-        public void onAppEvent(@NonNull String name, @NonNull String data) {
-            if (delegate.get() != null) {
-                delegate.get().onAppEvent(name, data);
-            }
-        }
-    }
+  }
 }

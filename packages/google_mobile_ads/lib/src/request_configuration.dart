@@ -31,7 +31,10 @@ class RequestConfiguration {
 
   /// Creates a [RequestConfiguration].
   RequestConfiguration(
-      {this.maxAdContentRating, this.tagForChildDirectedTreatment, this.tagForUnderAgeOfConsent, this.testDeviceIds});
+      {this.maxAdContentRating,
+      this.tagForChildDirectedTreatment,
+      this.tagForUnderAgeOfConsent,
+      this.testDeviceIds});
 }
 
 /// Values for [RequestConfiguration.maxAdContentRating].

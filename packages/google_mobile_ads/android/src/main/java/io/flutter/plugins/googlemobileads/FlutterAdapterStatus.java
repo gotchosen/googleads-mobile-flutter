@@ -35,9 +35,9 @@ class FlutterAdapterStatus {
   }
 
   FlutterAdapterStatus(
-          @NonNull AdapterInitializationState state,
-          @NonNull String description,
-          @NonNull Number latency) {
+      @NonNull AdapterInitializationState state,
+      @NonNull String description,
+      @NonNull Number latency) {
     this.state = state;
     this.description = description;
     this.latency = latency;
@@ -53,7 +53,7 @@ class FlutterAdapterStatus {
         break;
       default:
         final String message =
-                String.format("Unable to handle state: %s", status.getInitializationState());
+            String.format("Unable to handle state: %s", status.getInitializationState());
         throw new IllegalArgumentException(message);
     }
 

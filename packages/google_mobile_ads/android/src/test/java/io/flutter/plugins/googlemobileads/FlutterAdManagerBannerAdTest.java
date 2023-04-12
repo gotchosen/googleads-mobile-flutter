@@ -18,6 +18,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -34,17 +35,20 @@ import com.google.android.gms.ads.ResponseInfo;
 import com.google.android.gms.ads.admanager.AdManagerAdRequest;
 import com.google.android.gms.ads.admanager.AdManagerAdView;
 import com.google.android.gms.ads.admanager.AppEventListener;
-import io.flutter.plugin.common.BinaryMessenger;
+import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.platform.PlatformView;
 import io.flutter.plugins.googlemobileads.FlutterAd.FlutterLoadAdError;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.robolectric.RobolectricTestRunner;
 
 /** Tests for {@link FlutterAdManagerBannerAd}. */
+@RunWith(RobolectricTestRunner.class)
 public class FlutterAdManagerBannerAdTest {
 
   private AdInstanceManager mockManager;
@@ -58,13 +62,13 @@ public class FlutterAdManagerBannerAdTest {
   @Before
   public void setup() {
     // Setup mock dependencies for flutterBannerAd.
-    BinaryMessenger mockMessenger = mock(BinaryMessenger.class);
-    mockManager = spy(new AdInstanceManager(mock(Activity.class), mockMessenger));
+    mockManager = spy(new AdInstanceManager(mock(MethodChannel.class)));
+    doReturn(mock(Activity.class)).when(mockManager).getActivity();
     FlutterAdManagerAdRequest mockFlutterAdRequest = mock(FlutterAdManagerAdRequest.class);
     mockAdRequest = mock(AdManagerAdRequest.class);
     FlutterAdSize mockFlutterAdSize = mock(FlutterAdSize.class);
     adSize = new AdSize(1, 2);
-    when(mockFlutterAdRequest.asAdManagerAdRequest()).thenReturn(mockAdRequest);
+    when(mockFlutterAdRequest.asAdManagerAdRequest(anyString())).thenReturn(mockAdRequest);
     when(mockFlutterAdSize.getAdSize()).thenReturn(adSize);
     List<FlutterAdSize> sizes = new ArrayList<>();
     sizes.add(mockFlutterAdSize);
@@ -119,6 +123,7 @@ public class FlutterAdManagerBannerAdTest {
                 listener.onAdImpression();
                 listener.onAdClosed();
                 listener.onAdOpened();
+                listener.onAdClicked();
                 return null;
               }
             })
@@ -136,6 +141,7 @@ public class FlutterAdManagerBannerAdTest {
     verify(mockManager).onAdImpression(eq(1));
     verify(mockManager).onAdClosed(eq(1));
     verify(mockManager).onAdOpened(eq(1));
+    verify(mockManager).onAdClicked(eq(1));
     assertEquals(flutterBannerAd.getPlatformView().getView(), mockAdView);
   }
 

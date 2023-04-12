@@ -32,12 +32,12 @@ class FlutterBannerAd extends FlutterAd implements FlutterAdLoadedListener {
 
   /** Constructs the FlutterBannerAd. */
   public FlutterBannerAd(
-    int adId,
-    @NonNull AdInstanceManager manager,
-    @NonNull String adUnitId,
-    @NonNull FlutterAdRequest request,
-    @NonNull FlutterAdSize size,
-    @NonNull BannerAdCreator bannerAdCreator) {
+      int adId,
+      @NonNull AdInstanceManager manager,
+      @NonNull String adUnitId,
+      @NonNull FlutterAdRequest request,
+      @NonNull FlutterAdSize size,
+      @NonNull BannerAdCreator bannerAdCreator) {
     super(adId);
     Preconditions.checkNotNull(manager);
     Preconditions.checkNotNull(adUnitId);
@@ -64,7 +64,7 @@ class FlutterBannerAd extends FlutterAd implements FlutterAdLoadedListener {
     adView.setAdSize(size.getAdSize());
     adView.setOnPaidEventListener(new FlutterPaidEventListener(manager, this));
     adView.setAdListener(new FlutterBannerAdListener(adId, manager, this));
-    adView.loadAd(request.asAdRequest());
+    adView.loadAd(request.asAdRequest(adUnitId));
   }
 
   @Nullable
@@ -82,5 +82,13 @@ class FlutterBannerAd extends FlutterAd implements FlutterAdLoadedListener {
       adView.destroy();
       adView = null;
     }
+  }
+
+  @Nullable
+  FlutterAdSize getAdSize() {
+    if (adView == null || adView.getAdSize() == null) {
+      return null;
+    }
+    return new FlutterAdSize(adView.getAdSize());
   }
 }

@@ -57,7 +57,9 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
               }
 
               final AdManagerBannerAd? adManagerBannerAd = _adManagerBannerAd;
-              if (index == 10 && _adManagerBannerAdIsLoaded && adManagerBannerAd != null) {
+              if (index == 10 &&
+                  _adManagerBannerAdIsLoaded &&
+                  adManagerBannerAd != null) {
                 return Container(
                     height: adManagerBannerAd.sizes[0].height.toDouble(),
                     width: adManagerBannerAd.sizes[0].width.toDouble(),
@@ -66,7 +68,8 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
 
               final NativeAd? nativeAd = _nativeAd;
               if (index == 15 && _nativeAdIsLoaded && nativeAd != null) {
-                return Container(width: 250, height: 350, child: AdWidget(ad: nativeAd));
+                return Container(
+                    width: 250, height: 350, child: AdWidget(ad: nativeAd));
               }
 
               return Text(
@@ -84,8 +87,9 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
     // Create the ad objects and load ads.
     _bannerAd = BannerAd(
         size: AdSize.banner,
-        adUnitId:
-            Platform.isAndroid ? 'ca-app-pub-3940256099942544/6300978111' : 'ca-app-pub-3940256099942544/2934735716',
+        adUnitId: Platform.isAndroid
+            ? 'ca-app-pub-3940256099942544/6300978111'
+            : 'ca-app-pub-3940256099942544/2934735716',
         listener: BannerAdListener(
           onAdLoaded: (Ad ad) {
             print('$BannerAd loaded.');
@@ -104,8 +108,9 @@ class _ReusableInlineExampleState extends State<ReusableInlineExample> {
       ..load();
 
     _nativeAd = NativeAd(
-      adUnitId:
-          Platform.isAndroid ? 'ca-app-pub-3940256099942544/2247696110' : 'ca-app-pub-3940256099942544/3986624511',
+      adUnitId: Platform.isAndroid
+          ? 'ca-app-pub-3940256099942544/2247696110'
+          : 'ca-app-pub-3940256099942544/3986624511',
       request: AdRequest(),
       factoryId: 'adFactoryExample',
       listener: NativeAdListener(

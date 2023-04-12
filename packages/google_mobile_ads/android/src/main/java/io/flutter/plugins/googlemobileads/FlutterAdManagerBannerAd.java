@@ -14,17 +14,21 @@
 
 package io.flutter.plugins.googlemobileads;
 
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+
+import android.view.ViewGroup.LayoutParams;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.google.android.gms.ads.AdSize;
-import com.google.android.gms.ads.ResponseInfo;
 import com.google.android.gms.ads.admanager.AdManagerAdRequest;
 import com.google.android.gms.ads.admanager.AdManagerAdView;
 import com.google.android.gms.ads.admanager.AppEventListener;
-import com.google.android.gms.common.internal.Preconditions;
 import io.flutter.plugin.platform.PlatformView;
+import io.flutter.util.Preconditions;
 import java.util.List;
 
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
 import org.prebid.mobile.BannerAdUnit;
 import org.prebid.mobile.Host;
 import org.prebid.mobile.OnCompleteListener;
@@ -37,13 +41,14 @@ import org.prebid.mobile.ResultCode;
  */
 class FlutterAdManagerBannerAd extends FlutterAd implements FlutterAdLoadedListener {
 
-  @NonNull private final AdInstanceManager manager;
+  @NonNull protected final AdInstanceManager manager;
+  @NonNull protected final FlutterPlugin.FlutterPluginBinding pluginBinding;
   @NonNull private final String adUnitId;
   @NonNull private final List<FlutterAdSize> sizes;
   @NonNull private final FlutterAdManagerAdRequest request;
   @NonNull private final BannerAdCreator bannerAdCreator;
   @NonNull private final BannerAdUnit adUnit;
-  @Nullable private AdManagerAdView view;
+  @Nullable protected AdManagerAdView adView;
 
   /**
    * Constructs a `FlutterAdManagerBannerAd`.
@@ -54,6 +59,7 @@ class FlutterAdManagerBannerAd extends FlutterAd implements FlutterAdLoadedListe
   public FlutterAdManagerBannerAd(
       int adId,
       @NonNull AdInstanceManager manager,
+      @NonNull FlutterPlugin.FlutterPluginBinding pluginBinding,
       @NonNull String adUnitId,
       @NonNull List<FlutterAdSize> sizes,
       @NonNull FlutterAdManagerAdRequest request,
@@ -64,6 +70,7 @@ class FlutterAdManagerBannerAd extends FlutterAd implements FlutterAdLoadedListe
     Preconditions.checkNotNull(sizes);
     Preconditions.checkNotNull(request);
     this.manager = manager;
+    this.pluginBinding = pluginBinding;
     this.adUnitId = adUnitId;
     this.sizes = sizes;
     this.request = request;
@@ -73,54 +80,57 @@ class FlutterAdManagerBannerAd extends FlutterAd implements FlutterAdLoadedListe
 
   @Override
   void load() {
-    view = bannerAdCreator.createAdManagerAdView();
-    view.setAdUnitId(adUnitId);
-    view.setAppEventListener(
-            new AppEventListener() {
-              @Override
-              public void onAppEvent(String name, String data) {
-                manager.onAppEvent(adId, name, data);
-              }
-            });
+    adView = bannerAdCreator.createAdManagerAdView();
+    if (this instanceof FluidAdManagerBannerAd) {
+      adView.setLayoutParams(new LayoutParams(MATCH_PARENT, WRAP_CONTENT));
+    }
+    adView.setAdUnitId(adUnitId);
+    adView.setAppEventListener(
+        new AppEventListener() {
+          @Override
+          public void onAppEvent(String name, String data) {
+            manager.onAppEvent(adId, name, data);
+          }
+        });
 
     final AdSize[] allSizes = new AdSize[sizes.size()];
     for (int i = 0; i < sizes.size(); i++) {
       allSizes[i] = sizes.get(i).getAdSize();
     }
-    view.setAdSizes(allSizes);
-    view.setAdListener(new FlutterBannerAdListener(adId, manager, this));
 
     preparePrebid();
-    final AdManagerAdRequest r = request.asAdManagerAdRequest();
+
+    adView.setAdSizes(allSizes);
+    adView.setAdListener(new FlutterBannerAdListener(adId, manager, this));
+//    adView.loadAd(request.asAdManagerAdRequest(adUnitId));
+    final AdManagerAdRequest r = request.asAdManagerAdRequest(adUnitId);
     adUnit.fetchDemand(r, new OnCompleteListener() {
       @Override
-      public void onComplete(ResultCode resultCode) {
-        view.loadAd(r);
-      }
+      public void onComplete(ResultCode resultCode) { adView.loadAd(r); }
     });
   }
 
   @Override
   public void onAdLoaded() {
-    if (view != null) {
-      manager.onAdLoaded(adId, view.getResponseInfo());
+    if (adView != null) {
+      manager.onAdLoaded(adId, adView.getResponseInfo());
     }
   }
 
   @Nullable
   @Override
   PlatformView getPlatformView() {
-    if (view == null) {
+    if (adView == null) {
       return null;
     }
-    return new FlutterPlatformView(view);
+    return new FlutterPlatformView(adView);
   }
 
   @Override
   void dispose() {
-    if (view != null) {
-      view.destroy();
-      view = null;
+    if (adView != null) {
+      adView.destroy();
+      adView = null;
     }
   }
 
@@ -128,9 +138,17 @@ class FlutterAdManagerBannerAd extends FlutterAd implements FlutterAdLoadedListe
     Host host = Host.CUSTOM;
     host.setHostUrl("https://ib.adnxs.com/openrtb2/prebid");
 //    host.setHostUrl("https://prebid.adnxs.com/pbs/v1/openrtb2/auction");
-    PrebidMobile.setApplicationContext(manager.activity);
+    PrebidMobile.setApplicationContext(pluginBinding.getApplicationContext());
     PrebidMobile.setPrebidServerHost(host);
     PrebidMobile.setPrebidServerAccountId("11011");
 //    PrebidMobile.setPrebidServerAccountId("bfa84af2-bd16-4d35-96ad-31c6bb888df0");
+  }
+
+  @Nullable
+  FlutterAdSize getAdSize() {
+    if (adView == null || adView.getAdSize() == null) {
+      return null;
+    }
+    return new FlutterAdSize(adView.getAdSize());
   }
 }
