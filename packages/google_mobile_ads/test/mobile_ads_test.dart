@@ -21,7 +21,13 @@ import 'package:google_mobile_ads/src/ad_instance_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_mobile_ads/src/webview_controller_util.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'mobile_ads_test.mocks.dart';
 
+@GenerateMocks([WebViewController, AdInstanceManager, WebViewControllerUtil])
 void main() {
   group('Mobile Ads', () {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,11 +40,15 @@ void main() {
     });
 
     setUp(() async {
+      instanceManager =
+          AdInstanceManager('plugins.flutter.io/google_mobile_ads');
       log.clear();
-      MethodChannel(
-        'plugins.flutter.io/google_mobile_ads',
-        StandardMethodCodec(AdMessageCodec()),
-      ).setMockMethodCallHandler((MethodCall methodCall) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+              MethodChannel(
+                'plugins.flutter.io/google_mobile_ads',
+                StandardMethodCodec(AdMessageCodec()),
+              ), (MethodCall methodCall) async {
         log.add(methodCall);
         switch (methodCall.method) {
           case 'MobileAds#initialize':
@@ -59,6 +69,8 @@ void main() {
           case 'MobileAds#getVersionString':
             return Future<String>.value('Test-SDK-Version');
           case 'MobileAds#updateRequestConfiguration':
+            return null;
+          case 'MobileAds#registerWebView':
             return null;
           case 'MobileAds#getRequestConfiguration':
             return RequestConfiguration(
@@ -152,11 +164,53 @@ void main() {
       expect(status.latency, 0);
     });
 
+    test('$MobileAds.registerWebView', () async {
+      instanceManager = MockAdInstanceManager();
+      final webView = MockWebViewController();
+      when(instanceManager.registerWebView(webView))
+          .thenAnswer((realInvocation) => Future.value());
+      await MobileAds.instance.registerWebView(webView);
+
+      verify(instanceManager.registerWebView(webView));
+    });
+
+    test('$MobileAds.registerWebView android', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final mockWebViewControllerUtil = MockWebViewControllerUtil();
+      when(mockWebViewControllerUtil.webViewIdentifier(any)).thenReturn(1);
+      instanceManager = AdInstanceManager(
+          'plugins.flutter.io/google_mobile_ads',
+          webViewControllerUtil: mockWebViewControllerUtil);
+      final webView = MockWebViewController();
+      await MobileAds.instance.registerWebView(webView);
+
+      expect(log, <Matcher>[
+        isMethodCall('MobileAds#registerWebView', arguments: {'webViewId': 1})
+      ]);
+    });
+
+    test('$MobileAds.registerWebView iOS', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      final mockWebViewControllerUtil = MockWebViewControllerUtil();
+      when(mockWebViewControllerUtil.webViewIdentifier(any)).thenReturn(1);
+      instanceManager = AdInstanceManager(
+          'plugins.flutter.io/google_mobile_ads',
+          webViewControllerUtil: mockWebViewControllerUtil);
+      final webView = MockWebViewController();
+      await MobileAds.instance.registerWebView(webView);
+
+      expect(log, <Matcher>[
+        isMethodCall('MobileAds#registerWebView', arguments: {'webViewId': 1})
+      ]);
+    });
+
     test('$MobileAds.openAdInspector success', () async {
-      MethodChannel(
-        'plugins.flutter.io/google_mobile_ads',
-        StandardMethodCodec(AdMessageCodec()),
-      ).setMockMethodCallHandler((MethodCall methodCall) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+              MethodChannel(
+                'plugins.flutter.io/google_mobile_ads',
+                StandardMethodCodec(AdMessageCodec()),
+              ), (MethodCall methodCall) async {
         return null;
       });
 
@@ -170,10 +224,12 @@ void main() {
     });
 
     test('$MobileAds.openAdInspector error', () async {
-      MethodChannel(
-        'plugins.flutter.io/google_mobile_ads',
-        StandardMethodCodec(AdMessageCodec()),
-      ).setMockMethodCallHandler((MethodCall methodCall) async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+              MethodChannel(
+                'plugins.flutter.io/google_mobile_ads',
+                StandardMethodCodec(AdMessageCodec()),
+              ), (MethodCall methodCall) async {
         throw PlatformException(
             code: '1', details: 'details', message: 'message');
       });
@@ -190,6 +246,8 @@ void main() {
     });
 
     test('$MobileAds.setSameAppKeyEnabled', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+
       await MobileAds.instance.setSameAppKeyEnabled(true);
 
       expect(log, <Matcher>[

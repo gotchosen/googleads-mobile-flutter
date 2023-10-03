@@ -40,6 +40,7 @@ import io.flutter.plugin.common.StandardMethodCodec;
 import io.flutter.plugins.googlemobileads.FlutterAd.FlutterOverlayAd;
 import io.flutter.plugins.googlemobileads.nativetemplates.FlutterNativeTemplateStyle;
 import io.flutter.plugins.googlemobileads.usermessagingplatform.UserMessagingPlatformManager;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -318,6 +319,7 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
     }
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public void onMethodCall(@NonNull MethodCall call, @NonNull final Result result) {
     if (instanceManager == null || pluginBinding == null) {
@@ -376,6 +378,11 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
           builder.setTestDeviceIds(testDeviceIds);
         }
         MobileAds.setRequestConfiguration(builder.build());
+        result.success(null);
+        break;
+      case "MobileAds#registerWebView":
+        Integer webViewId = call.<Integer>argument("webViewId");
+        flutterMobileAds.registerWebView(webViewId, pluginBinding.getFlutterEngine());
         result.success(null);
         break;
       case "loadBannerAd":
@@ -665,6 +672,13 @@ public class GoogleMobileAdsPlugin implements FlutterPlugin, ActivityAware, Meth
       // is invoked more than once. See b/193418432.
       if (isInitializationCompleted) {
         return;
+      }
+      try {
+        Class<?> clazz = Class.forName("com.google.android.gms.ads.MobileAds");
+        Method method = clazz.getDeclaredMethod("setPlugin", String.class);
+        method.setAccessible(true);
+        method.invoke(null, Constants.REQUEST_AGENT_PREFIX_VERSIONED);
+      } catch (Exception ignored) {
       }
       result.success(new FlutterInitializationStatus(initializationStatus));
       isInitializationCompleted = true;

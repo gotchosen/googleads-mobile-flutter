@@ -15,8 +15,10 @@
 #import "FLTGoogleMobileAdsPlugin.h"
 #import "FLTAdUtil.h"
 #import "FLTAppStateNotifier.h"
+#import "FLTConstants.h"
 #import "FLTNSString.h"
 #import "UserMessagingPlatform/FLTUserMessagingPlatformManager.h"
+@import webview_flutter_wkwebview;
 
 @interface FLTGoogleMobileAdsPlugin ()
 @property(nonatomic, retain) FlutterMethodChannel *channel;
@@ -28,6 +30,10 @@
 @interface FLTInitializationHandler : NSObject
 - (instancetype)initWithResult:(FlutterResult)result;
 - (void)handleInitializationComplete:(GADInitializationStatus *_Nonnull)status;
+@end
+
+@interface GADMobileAds (Plugin)
+- (void)setPlugin:(nullable NSString *)plugin;
 @end
 
 @implementation FLTInitializationHandler {
@@ -50,6 +56,10 @@
   }
   _result([[FLTInitializationStatus alloc] initWithStatus:status]);
   _isInitializationCompleted = true;
+  GADMobileAds *mobileAds = GADMobileAds.sharedInstance;
+  if ([mobileAds respondsToSelector:@selector(setPlugin:)]) {
+    [mobileAds setPlugin:FLT_REQUEST_AGENT_VERSIONED];
+  }
 }
 
 @end
@@ -61,6 +71,7 @@
   FLTGoogleMobileAdsReaderWriter *_readerWriter;
   FLTAppStateNotifier *_appStateNotifier;
   FLTUserMessagingPlatformManager *_userMessagingPlatformManager;
+  __weak FlutterAppDelegate *_appDelegate;
 }
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar> *)registrar {
@@ -87,11 +98,18 @@
   [registrar
       registerViewFactory:viewFactory
                    withId:@"plugins.flutter.io/google_mobile_ads/ad_widget"];
+  [registrar addApplicationDelegate:instance];
 }
 
 - (instancetype)init {
   self = [super init];
   return self;
+}
+
+- (BOOL)application:(UIApplication *)application
+    didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+  _appDelegate = (FlutterAppDelegate *)application.delegate;
+  return YES;
 }
 
 - (instancetype)initWithBinaryMessenger:
@@ -194,7 +212,24 @@
 }
 
 - (UIViewController *)rootController {
-  return UIApplication.sharedApplication.delegate.window.rootViewController;
+  UIViewController *root =
+      UIApplication.sharedApplication.delegate.window.rootViewController;
+  if ([FLTAdUtil isNull:root]) {
+    // UIApplication.sharedApplication.delegate.window is not guaranteed to be
+    // set. Use the keyWindow in this case.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    root = UIApplication.sharedApplication.keyWindow.rootViewController;
+#pragma clang diagnostic pop
+  }
+
+  // Get the presented view controller. This fixes an issue in the add to app
+  // case: https://github.com/googleads/googleads-mobile-flutter/issues/700
+  UIViewController *presentedViewController = root;
+  while (presentedViewController.presentedViewController) {
+    presentedViewController = presentedViewController.presentedViewController;
+  }
+  return presentedViewController;
 }
 
 - (void)handleMethodCall:(FlutterMethodCall *)call
@@ -261,6 +296,16 @@
   } else if ([call.method
                  isEqualToString:@"MobileAds#getRequestConfiguration"]) {
     result(GADMobileAds.sharedInstance.requestConfiguration);
+  } else if ([call.method isEqualToString:@"MobileAds#registerWebView"]) {
+    if (!_appDelegate) {
+      NSLog(@"App delegate is null in MobileAds#registerWebView, skipping");
+    } else {
+      NSNumber *webViewId = call.arguments[@"webViewId"];
+      WKWebView *webView = [FLTAdUtil getWebView:webViewId
+                           flutterPluginRegistry:_appDelegate];
+      [GADMobileAds.sharedInstance registerWebView:webView];
+    }
+    result(nil);
   } else if ([call.method
                  isEqualToString:@"MobileAds#updateRequestConfiguration"]) {
     NSString *maxAdContentRating = call.arguments[@"maxAdContentRating"];
